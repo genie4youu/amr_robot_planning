@@ -7,8 +7,11 @@ slprj/
 codegen/
 *.mex*
 *.mat.autosave
+*.log
+*.tmp
+.satk/
 
-# 결과/캐시 (필요하면 지우세요)
+# 실행 중 생성되는 결과/캐시
 results/
 artifacts/
 
