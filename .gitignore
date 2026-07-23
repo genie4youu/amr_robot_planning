@@ -1,0 +1,17 @@
+# MATLAB / Simulink 생성물
+*.asv
+*.autosave
+*.m~
+*.slxc
+slprj/
+codegen/
+*.mex*
+*.mat.autosave
+
+# 결과/캐시 (필요하면 지우세요)
+results/
+artifacts/
+
+# OS
+Thumbs.db
+.DS_Store
