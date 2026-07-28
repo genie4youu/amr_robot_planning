@@ -70,11 +70,17 @@ Differential-Drive Plant → Playback UI and Logs
 
 ## 빠른 시작
 
-MATLAB에서 저장소 루트로 이동한 뒤 실행합니다.
+권장 방법은 저장소 루트의 MATLAB Project 파일을 여는 것입니다.
+
+```matlab
+project = openProject("AMRRobotPlanning.prj");
+amrScenarioApp = launch_amr_scenario_ui("obstacle", "hospital");
+```
+
+MATLAB Project를 사용하지 않는 임시 세션에서는 기존 초기화 함수도 사용할 수 있습니다.
 
 ```matlab
 projectRoot = setup_amr_project();
-amrScenarioApp = launch_amr_scenario_ui("obstacle", "hospital");
 ```
 
 전체 단위검사:
@@ -97,17 +103,31 @@ integratedEnvironmentSummary = run_integrated_environment_matrix();
 
 자세한 설치와 모델 실행 방법은 [Getting Started](docs/GETTING_STARTED.md)를 참고하십시오.
 
+Stateflow Supervisor를 바로 확인하려면 버전 없는 정식 모델
+`models/prototypes/amr_mission_supervisor.slx`를 엽니다. `models/history/`의 모델은 비교용
+이전본이므로 일반 학습과 실행에서는 열지 않습니다.
+
+VS Code에서는 `AMRRobotPlanning.code-workspace`를 열면 MATLAB 생성 폴더가 탐색과 검색에서
+제외되고 공식 MATLAB·Codex 확장을 권장합니다. Codex의 프로젝트별 작업 규칙은 `AGENTS.md`에 있습니다.
+
+MATLAB Project의 Shortcuts에는 학습 문서, 단위검사, 통합 모델과 Scenario UI 진입점을 등록했습니다.
+
 ## 저장소 구조
 
 ```text
 amr_robot_planning/
 ├─ setup_amr_project.m       MATLAB path 초기화
+├─ AMRRobotPlanning.prj      MATLAB Project 진입점
+├─ AMRRobotPlanning.code-workspace
+├─ AGENTS.md                 Codex 프로젝트 규칙
 ├─ src/+amr/                 재사용 가능한 알고리즘 패키지
 ├─ scripts/                  모델 생성, 실행, UI, 회귀검증
 ├─ models/                   Simulink/Stateflow 모델 4개
 ├─ tests/unit/               assert 기반 단위검사
 ├─ data/expected/            검증 기준 MAT 파일
+├─ notes/                    실제 프롬프트와 시행착오
 └─ docs/
+   ├─ README.md              학습 문서 길잡이
    ├─ THEORY_INDEX.md        14단계 이론·구현 학습 순서
    ├─ PROJECT_PLAN.md        전체 개발 계획과 완료 조건
    ├─ ARCHITECTURE.md        코드와 모델의 연결 구조
@@ -118,6 +138,7 @@ amr_robot_planning/
 
 ## 문서
 
+- [학습 문서 길잡이](docs/README.md)
 - [이론 및 단계별 학습 색인](docs/THEORY_INDEX.md)
 - [프로젝트 전체 계획](docs/PROJECT_PLAN.md)
 - [시스템 아키텍처](docs/ARCHITECTURE.md)

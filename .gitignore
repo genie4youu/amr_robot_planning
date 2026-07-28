@@ -4,17 +4,34 @@
 *.m~
 *.slxc
 slprj/
+sfprj/
+sccprj/
 codegen/
 *.mex*
 *.mat.autosave
+*.slx.bak
 *.log
 *.tmp
 .satk/
 
 # 실행 중 생성되는 결과/캐시
+work/
 results/
 artifacts/
+logs/
+outputs/
+.codex-log/
+
+# 원시 실행 결과와 달리, 사람이 검토한 Markdown 결과 문서는 버전 관리한다.
+!docs/results/
+!docs/results/*.md
+
+# 원본 대용량 데이터와 선택적 외부 환경
+data/raw/
+.venv/
+__pycache__/
 
 # OS
 Thumbs.db
+desktop.ini
 .DS_Store

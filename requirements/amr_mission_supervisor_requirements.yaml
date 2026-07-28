@@ -1,0 +1,373 @@
+schema_version: "1.0"
+package: AMRMissionSupervisor
+
+requirements:
+  - id: REQ_AMR_001
+    summary: "While the AMR is in Boot, the AMR Mission Supervisor shall withhold motion authority until initialization and self-test are complete."
+    description: "Derived from the lifecycle concept in docs/INDUSTRIAL_STATEFLOW_ARCHITECTURE.md."
+    rationale: "초기화되지 않은 센서, 추정기 또는 구동계를 사용한 이동을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, lifecycle, safety]
+    derived_from: null
+
+  - id: REQ_AMR_002
+    summary: "When a valid power-on request is received in PowerOff, the AMR Mission Supervisor shall begin the Boot sequence."
+    description: "Derived from the PowerOff and Boot lifecycle states."
+    rationale: "전원 요청과 운용 준비 절차 사이의 명시적인 시작점을 제공한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, lifecycle]
+    derived_from: null
+
+  - id: REQ_AMR_003
+    summary: "When initialization and self-test complete successfully, the AMR Mission Supervisor shall enter Operational with the mission inactive."
+    description: "Derived from the Boot to Operational lifecycle transition."
+    rationale: "운용 진입 직후 이전 작업이 암묵적으로 재개되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, lifecycle, initialization]
+    derived_from: REQ_AMR_001
+
+  - id: REQ_AMR_004
+    summary: "If initialization or self-test fails or exceeds BootTimeout, then the AMR Mission Supervisor shall enter FaultLatched and identify the failure cause."
+    description: "Drafted from the Boot and FaultLatched lifecycle concept; BootTimeout is not yet calibrated."
+    rationale: "준비되지 않은 시스템이 Operational로 진입하지 못하게 하고 진단 가능성을 확보한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, lifecycle, timeout, fault]
+    derived_from: REQ_AMR_001
+
+  - id: REQ_AMR_005
+    summary: "When an accepted shutdown request is received, the AMR Mission Supervisor shall enter ControlledShutdown and revoke new mission acceptance."
+    description: "Derived from the ControlledShutdown lifecycle state."
+    rationale: "종료 중 새 임무가 시작되어 정지 절차와 충돌하는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, lifecycle, shutdown]
+    derived_from: null
+
+  - id: REQ_AMR_006
+    summary: "While the AMR is in ControlledShutdown, the AMR Mission Supervisor shall keep motion authority revoked until stop confirmation is received."
+    description: "Derived from the ControlledShutdown to PowerOff lifecycle sequence."
+    rationale: "실제 정지 확인 전에 전원 꺼짐으로 간주되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, lifecycle, safety, shutdown]
+    derived_from: REQ_AMR_005
+
+  - id: REQ_AMR_007
+    summary: "When stop confirmation is received in ControlledShutdown, the AMR Mission Supervisor shall enter PowerOff."
+    description: "Derived from the terminal lifecycle transition after controlled stopping."
+    rationale: "종료 절차의 완료 조건을 명확히 한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, lifecycle, shutdown]
+    derived_from: REQ_AMR_005
+
+  - id: REQ_AMR_008
+    summary: "When an emergency-stop condition is active, the AMR Mission Supervisor shall revoke motion authority by the next supervisor execution step and enter EmergencyStopLatched."
+    description: "Derived from the EmergencyStopLatched lifecycle state and independent safety-gate concept."
+    rationale: "다른 임무나 복구 요청보다 비상정지를 우선한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, lifecycle, emergency-stop, safety]
+    derived_from: null
+
+  - id: REQ_AMR_009
+    summary: "While the AMR is in EmergencyStopLatched, the AMR Mission Supervisor shall reject motion and mission-start requests."
+    description: "Derived from the latched emergency-stop behavior."
+    rationale: "비상정지 원인이 제거되기 전이나 reset 절차 전의 재가동을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, lifecycle, emergency-stop, latch]
+    derived_from: REQ_AMR_008
+
+  - id: REQ_AMR_010
+    summary: "When emergency stop is inactive, stop is confirmed, and operator acknowledgement is valid, the AMR Mission Supervisor shall leave EmergencyStopLatched through Boot."
+    description: "Derived from the documented reset path that requires reinitialization."
+    rationale: "비상정지 이후 Operational로 직접 복귀하지 않고 준비 상태를 다시 확인한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, lifecycle, emergency-stop, reset]
+    derived_from: REQ_AMR_008
+
+  - id: REQ_AMR_011
+    summary: "When a valid new job is received in Mission Idle, the AMR Mission Supervisor shall accept and store that job exactly once."
+    description: "Derived from the mission acceptance sequence in the Stateflow supervisor design."
+    rationale: "중복 이벤트나 반복 샘플로 동일 작업이 여러 번 생성되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, mission, job]
+    derived_from: null
+
+  - id: REQ_AMR_012
+    summary: "If a new job is invalid or cannot be completed with the reported system readiness, then the AMR Mission Supervisor shall reject it and report a rejection reason."
+    description: "Drafted from the ValidateJob mission state."
+    rationale: "실행 불가능한 임무를 시작하지 않고 상위 시스템에 결정 근거를 제공한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, mission, validation, diagnostics]
+    derived_from: REQ_AMR_011
+
+  - id: REQ_AMR_013
+    summary: "While a delivery job is active, the AMR Mission Supervisor shall request pickup navigation, loading, drop-off navigation, unloading, and return-home in the defined order."
+    description: "Derived from the existing pickup-to-return mission sequence."
+    rationale: "배송 작업의 공정 순서를 결정론적으로 유지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, mission, sequence]
+    derived_from: REQ_AMR_011
+
+  - id: REQ_AMR_014
+    summary: "When a payload operation is requested, the AMR Mission Supervisor shall correlate the completion response with the active request identifier before advancing the mission."
+    description: "Drafted to replace fixed loading and unloading delays with an explicit request-response contract."
+    rationale: "지연되거나 과거 작업에 속한 응답으로 임무가 잘못 진행되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, mission, payload, handshake]
+    derived_from: REQ_AMR_013
+
+  - id: REQ_AMR_015
+    summary: "If a payload response exceeds PayloadOperationTimeout, then the AMR Mission Supervisor shall stop mission progression and report a payload timeout outcome."
+    description: "Drafted from the loading and unloading timeout verification scenarios; PayloadOperationTimeout is not yet calibrated."
+    rationale: "외부 장비 응답이 없을 때 무한 대기하는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, mission, payload, timeout]
+    derived_from: REQ_AMR_014
+
+  - id: REQ_AMR_016
+    summary: "When an accepted cancel request is received during an active mission, the AMR Mission Supervisor shall stop issuing new mission goals and enter a controlled abort sequence."
+    description: "Drafted from the planned cancel and preemption behavior."
+    rationale: "작업 취소가 즉시 임의의 주행 명령 변경으로 이어지지 않게 한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, mission, cancel, shutdown]
+    derived_from: REQ_AMR_011
+
+  - id: REQ_AMR_017
+    summary: "When a navigation goal becomes active, the AMR Mission Supervisor shall issue a planning request with a unique request identifier."
+    description: "Derived from the Planning navigation state and drafted typed interface."
+    rationale: "계획 요청과 응답의 소유권 및 최신성을 판단할 수 있게 한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, navigation, planning, handshake]
+    derived_from: null
+
+  - id: REQ_AMR_018
+    summary: "When a valid plan response matching the active request is received, the AMR Mission Supervisor shall permit transition from Planning to Tracking."
+    description: "Derived from the Planning to Tracking navigation transition."
+    rationale: "과거 계획이나 다른 목표의 응답이 주행에 사용되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, navigation, planning, tracking]
+    derived_from: REQ_AMR_017
+
+  - id: REQ_AMR_019
+    summary: "If a planning response exceeds PlannerResponseTimeout, then the AMR Mission Supervisor shall enter Recovery and report a planner timeout reason."
+    description: "Drafted from the planner timeout and recovery design; PlannerResponseTimeout is not yet calibrated."
+    rationale: "계획기 응답 손실로 인한 무한 대기를 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, navigation, planning, timeout, recovery]
+    derived_from: REQ_AMR_017
+
+  - id: REQ_AMR_020
+    summary: "When the active path becomes invalid during Tracking, the AMR Mission Supervisor shall revoke tracking authority and request replanning."
+    description: "Derived from the Tracking and Replanning navigation states."
+    rationale: "더 이상 유효하지 않은 경로를 계속 추종하지 않게 한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, navigation, replanning, safety]
+    derived_from: null
+
+  - id: REQ_AMR_021
+    summary: "When progress is lost or the robot is reported stuck, the AMR Mission Supervisor shall enter a bounded recovery sequence."
+    description: "Derived from the Recovery navigation state and progress watchdog concept."
+    rationale: "진행 불가 상태를 감지하고 제한된 복구 절차로 전환한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, navigation, watchdog, recovery]
+    derived_from: null
+
+  - id: REQ_AMR_022
+    summary: "While navigation recovery is active, the AMR Mission Supervisor shall prevent the recovery attempt count from exceeding MaxRecoveryRetries."
+    description: "Drafted from the planned retry counter; MaxRecoveryRetries is not yet calibrated."
+    rationale: "복구 동작이 무한 반복되거나 위험한 진동 상태가 되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, navigation, recovery, retry]
+    derived_from: REQ_AMR_021
+
+  - id: REQ_AMR_023
+    summary: "When navigation recovery is exhausted, the AMR Mission Supervisor shall enter NavFailed and terminate or suspend the active mission with a recovery-exhausted reason."
+    description: "Drafted from the recovery failure escalation concept."
+    rationale: "복구 불가능 상태를 상위 임무와 운용자에게 명확히 전달한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, navigation, recovery, fault]
+    derived_from: REQ_AMR_022
+
+  - id: REQ_AMR_024
+    summary: "When a slowdown condition is confirmed, the AMR Mission Supervisor shall limit motion authority until the slowdown release guard is satisfied."
+    description: "Derived from the Safety Slowdown state and safety-zone evaluation."
+    rationale: "위험 인접 구역에서 속도를 제한하고 임계값 부근의 반복 해제를 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, safety, slowdown, hysteresis]
+    derived_from: null
+
+  - id: REQ_AMR_025
+    summary: "When a protective-stop condition is confirmed, the AMR Mission Supervisor shall revoke motion authority by the next supervisor execution step."
+    description: "Derived from the ProtectiveStop safety state and independent safety gate."
+    rationale: "보호정지 조건 이후 잘못된 이동 명령이 지속되지 않게 한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, safety, protective-stop]
+    derived_from: null
+
+  - id: REQ_AMR_026
+    summary: "While ProtectiveStop is active, the AMR Mission Supervisor shall withhold automatic mission motion until the hazard is clear and the configured resume guard is satisfied."
+    description: "Drafted from protective-stop release and operator acknowledgement scenarios."
+    rationale: "위험 신호가 순간적으로 사라졌다는 이유만으로 자동 재출발하는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, safety, protective-stop, reset]
+    derived_from: REQ_AMR_025
+
+  - id: REQ_AMR_027
+    summary: "When multiple motion-affecting conditions are active, the AMR Mission Supervisor shall resolve them according to the documented safety priority and emit one deterministic motion authority."
+    description: "Derived from the command arbitration priority design."
+    rationale: "병렬 영역의 상충된 요청이 출력 경쟁이나 비결정 동작으로 이어지는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, safety, arbitration, deterministic]
+    derived_from: null
+
+  - id: REQ_AMR_028
+    summary: "If required LiDAR, pose, navigation, or command data exceeds DataFreshnessLimit, then the AMR Mission Supervisor shall revoke motion authority and identify the stale source."
+    description: "Derived from the sensor, pose, and command freshness watchdog concept; DataFreshnessLimit is not yet calibrated."
+    rationale: "오래된 상태 정보를 현재 상태로 오인한 주행을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, health, watchdog, communication, safety]
+    derived_from: null
+
+  - id: REQ_AMR_029
+    summary: "When a latched drive or actuator fault is detected, the AMR Mission Supervisor shall revoke motion authority and enter FaultLatched."
+    description: "Derived from the HealthFault request and FaultLatched lifecycle state."
+    rationale: "구동계 고장 중 이동 명령이 전달되지 않게 한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, health, actuator, fault, safety]
+    derived_from: null
+
+  - id: REQ_AMR_030
+    summary: "While the AMR is in FaultLatched, the AMR Mission Supervisor shall remain latched after the initiating fault input disappears until reset guards are satisfied."
+    description: "Derived from the documented latched actuator and health fault behavior."
+    rationale: "간헐 고장이나 신호 단절이 자동 정상 복귀로 오인되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, health, fault, latch, reset]
+    derived_from: REQ_AMR_029
+
+  - id: REQ_AMR_031
+    summary: "When localization health becomes degraded but remains usable, the AMR Mission Supervisor shall select the configured degraded-motion policy and report the condition."
+    description: "Derived from the Degraded health state and localization uncertainty monitoring."
+    rationale: "완전 고장과 성능 저하를 구분하면서 운용 제한을 명시한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, health, localization, degraded]
+    derived_from: null
+
+  - id: REQ_AMR_032
+    summary: "When battery state crosses BatteryLowThreshold under its confirmation guard, the AMR Mission Supervisor shall report EnergyLow and evaluate mission suspension."
+    description: "Derived from the Energy Low state; BatteryLowThreshold and its confirmation guard are not yet calibrated."
+    rationale: "배터리 부족을 조기에 알리고 임무 지속 가능성을 재평가한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, energy, battery, mission]
+    derived_from: null
+
+  - id: REQ_AMR_033
+    summary: "When battery state crosses BatteryCriticalThreshold under its confirmation guard, the AMR Mission Supervisor shall prioritize a safe stop or charger-directed survival action over normal mission progression."
+    description: "Derived from the Energy Critical and GoToCharger concepts; BatteryCriticalThreshold is not yet calibrated."
+    rationale: "전원 소진으로 인한 통제되지 않은 정지를 피하고 안전한 종료 가능성을 높인다."
+    asil: Unset
+    status: Draft
+    priority: Critical
+    keywords: [draft, energy, battery, safety]
+    derived_from: REQ_AMR_032
+
+  - id: REQ_AMR_034
+    summary: "When charging completion is confirmed, the AMR Mission Supervisor shall resume a suspended mission only if the job remains valid and all lifecycle, safety, and health guards permit motion."
+    description: "Derived from the Charging state and mission resume policy."
+    rationale: "충전 완료만으로 오래되었거나 취소된 작업이 자동 재개되는 것을 방지한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, energy, charging, mission, reset]
+    derived_from: REQ_AMR_033
+
+  - id: REQ_AMR_035
+    summary: "When any supervisor state transition occurs, the AMR Mission Supervisor shall record the timestamp, previous state, next state, transition identifier, and reason code."
+    description: "Drafted from the telemetry and transition traceability objective."
+    rationale: "전이 원인, 체류시간, 채터링과 복구 경로를 재현 가능하게 분석한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, diagnostics, telemetry, transition]
+    derived_from: null
+
+  - id: REQ_AMR_036
+    summary: "When a mission request reaches a terminal outcome, the AMR Mission Supervisor shall report exactly one of completed, rejected, cancelled, timed out, or failed with a reason code."
+    description: "Drafted from the mission result and diagnostics contract."
+    rationale: "상위 시스템이 모든 요청의 종결 상태를 결정론적으로 확인할 수 있게 한다."
+    asil: Unset
+    status: Draft
+    priority: High
+    keywords: [draft, mission, diagnostics, deterministic]
+    derived_from: null
+
+  - id: REQ_AMR_037
+    summary: "The AMR Mission Supervisor shall expose current lifecycle, mission, navigation, energy, safety, and health modes for logging and verification."
+    description: "Derived from the existing parallel-region mode logging and portfolio verification objective."
+    rationale: "상태 체류시간, 전이 횟수, 도달 가능성과 모드 조합을 정량 검증할 수 있게 한다."
+    asil: Unset
+    status: Draft
+    priority: Medium
+    keywords: [draft, diagnostics, telemetry, verification]
+    derived_from: null

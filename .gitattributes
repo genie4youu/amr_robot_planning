@@ -1,5 +1,11 @@
 *.m text eol=lf
 *.md text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.code-workspace text eol=lf
+*.prj text eol=lf
+*.xml text eol=lf
+*.graphml text eol=lf
 *.slx binary
 *.mat binary
 *.png binary

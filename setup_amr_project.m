@@ -1,11 +1,15 @@
 function projectRoot = setup_amr_project()
-%SETUP_AMR_PROJECT Add the public AMR project folders to the MATLAB path.
+%SETUP_AMR_PROJECT Add AMR folders to the MATLAB path without a project.
+%   Prefer opening AMRRobotPlanning.prj for normal work. This function is a
+%   lightweight fallback for temporary MATLAB sessions.
 
 projectRoot = fileparts(mfilename("fullpath"));
 addpath( ...
     fullfile(projectRoot, "scripts"), ...
     fullfile(projectRoot, "src"), ...
-    fullfile(projectRoot, "tests", "unit"));
+    fullfile(projectRoot, "tests", "unit"), ...
+    fullfile(projectRoot, "models", "prototypes"), ...
+    fullfile(projectRoot, "models", "system"));
 
 fprintf("AMR project ready: %s\n", projectRoot);
 end

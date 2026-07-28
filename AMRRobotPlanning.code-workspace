@@ -1,0 +1,39 @@
+{
+    "folders": [
+        {
+            "name": "AMR Robot Planning",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.encoding": "utf8",
+        "files.eol": "\n",
+        "files.associations": {
+            "*.m": "matlab"
+        },
+        "files.exclude": {
+            "**/resources/project": true,
+            "**/slprj": true,
+            "**/work": true
+        },
+        "search.exclude": {
+            "**/resources/project": true,
+            "**/slprj": true,
+            "**/work": true,
+            "**/results": true
+        },
+        "files.watcherExclude": {
+            "**/resources/project/**": true,
+            "**/slprj/**": true,
+            "**/work/**": true
+        },
+        "terminal.integrated.cwd": "${workspaceFolder}"
+    },
+    "extensions": {
+        "recommendations": [
+            "mathworks.language-matlab",
+            "openai.chatgpt"
+        ]
+    }
+}
+

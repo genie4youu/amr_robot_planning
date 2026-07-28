@@ -6,21 +6,24 @@
 
 ROS Toolbox, Robotics System Toolbox, Simulink Test, ROS 2와 Gazebo는 필요하지 않습니다. 자동검사는 기본 MATLAB `assert`를 사용합니다.
 
-## 2. 저장소 준비
+## 2. MATLAB Project 열기
 
-MATLAB Current Folder를 저장소 루트로 설정하고 다음을 실행합니다.
+MATLAB Current Folder를 저장소 루트로 설정하고 프로젝트를 엽니다.
 
 ```matlab
-projectRoot = setup_amr_project();
+project = openProject("AMRRobotPlanning.prj");
 ```
 
-이 함수는 다음 폴더를 MATLAB path에 추가합니다.
+프로젝트는 다음 폴더를 MATLAB path에 추가합니다.
 
 - `scripts`
 - `src`
 - `tests/unit`
+- `models/prototypes`
+- `models/system`
 
-MATLAB을 다시 시작했다면 `setup_amr_project`를 다시 실행하십시오.
+캐시와 코드 생성물은 프로젝트의 `work/`에 저장됩니다. 임시로 MATLAB Project를 사용하지 않을 때만
+`setup_amr_project`를 실행하십시오.
 
 ## 3. 지도 UI 실행
 
@@ -80,6 +83,13 @@ integratedSummary = run_integrated_delivery_scenarios();
 ```
 
 ## 5. 모델 열기
+
+최신 Mission Supervisor와 정리된 Stateflow 그래픽:
+
+```matlab
+load_system("models/prototypes/amr_mission_supervisor.slx");
+open_system("models/prototypes/amr_mission_supervisor.slx");
+```
 
 Scenario Plant와 복구 Stateflow:
 
