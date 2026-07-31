@@ -131,7 +131,7 @@ stale data와 통신 손실은 해당 입력을 단순 `false`로 해석하지 �
 
 ## 현재 모델과의 관계
 
-`models/prototypes/amr_mission_supervisor.slx`에 lifecycle과 다섯 병렬 영역을 가진
+`models/mission_supervisor/amr_mission_supervisor.slx`에 lifecycle과 다섯 병렬 영역을 가진
 단일 Supervisor 수직 절편을 구현했다. 모델 구조 검사에서 각 병렬 영역은
 `Operational` 아래에 존재하며 unconnected port/line과 Stateflow lint 오류가 없다.
 
@@ -148,5 +148,5 @@ stale data와 통신 손실은 해당 입력을 단순 `false`로 해석하지 �
 - 최종 `motionPermit`은 lifecycle/navigation/safety/health/energy permit을 받는 루트의
   단일 arbitration 블록이 소유한다.
 
-기존 `models/system/amr_industrial_supervisor.slx`와
-`models/system/amr_integrated_delivery_system.slx`는 비교 기준선으로 유지했으며 변경하지 않았다.
+기존 `models/examples/amr_industrial_supervisor.slx`와
+`models/integrated_system/amr_integrated_delivery_system.slx`는 비교 기준선으로 유지했으며 변경하지 않았다.

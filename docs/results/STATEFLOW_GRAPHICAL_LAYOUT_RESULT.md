@@ -2,9 +2,9 @@
 
 ## 결과 모델
 
-- 현재 정식 모델: `models/prototypes/amr_mission_supervisor.slx`
-- 논리 기준선: `models/history/amr_mission_supervisor_logic_baseline_2026-07-24.slx`
-- 이전 그래픽 시도: `models/history/amr_mission_supervisor_curved_layout_2026-07-27.slx`
+- 현재 정식 모델: `models/mission_supervisor/amr_mission_supervisor.slx`
+- 논리 기준선: `models/mission_supervisor/versions/amr_mission_supervisor_v01_logic_baseline_2026_07_24.slx`
+- 이전 그래픽 시도: `models/mission_supervisor/versions/amr_mission_supervisor_v02a_curved_attempt_2026_07_27.slx`
 - 레이아웃: `scripts/layout_amr_mission_supervisor.m`
 - 검사기: `src/+amr/+stateflow/inspectGraphicalLayout.m`
 - 단위 테스트: `tests/unit/StateflowGraphicalLayoutTest.m`

@@ -3,7 +3,7 @@ function modelPath = build_amr_milestone01_skeleton()
 %   Stateflow states and chart data are added separately through model_edit.
 
 projectRoot = fileparts(fileparts(mfilename('fullpath')));
-modelDirectory = fullfile(projectRoot, 'models', 'prototypes');
+modelDirectory = fullfile(projectRoot, 'models', 'examples');
 modelName = 'amr_milestone01';
 modelPath = fullfile(modelDirectory, modelName + ".slx");
 

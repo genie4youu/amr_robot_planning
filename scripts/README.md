@@ -1,22 +1,36 @@
-# 프로젝트 스크립트
+# 프로젝트 실행 명령
 
-주요 스크립트:
+일반 사용자는 아래 대표 명령만 알면 된다.
 
-- `layout_amr_mission_supervisor.m`: 최신 정식 Mission Supervisor의 State/Transition 그래픽 배치
-- `run_amr_mission_supervisor_scenarios.m`: 최신 정식 Mission Supervisor의 9개 scripted-plant 시나리오 검증
-- `run_supervisor_verification.m`: 요구사항·인터페이스·그래픽·시나리오를 한 번에 검증하는 대표 진입점
-- `launch_amr_scenario_ui.m`: 사무실·병원·창고와 네 주행 상황을 계산하고 지도 UI에서 재생
-- `run_all_amr_scenarios.m`: 네 시나리오의 완료·오차·충돌 여부 회귀검증
-- `run_environment_matrix.m`: 3개 환경 × 4개 상황 주행 회귀검증과 궤적 그림 생성
-- `build_amr_scenario_model_skeleton.m`: Scenario Lab 모델 생성
-- `build_amr_industrial_supervisor.m`: 계층/병렬 Stateflow 모델 생성
-- `run_industrial_supervisor_scenarios.m`: 감독 제어기 다섯 시나리오 회귀검증
-- `build_amr_integrated_system.m`: 주행 Plant와 Industrial Supervisor 통합 모델 생성
+| 목적 | 실행 명령 |
+| --- | --- |
+| 두 Mission Supervisor 레이아웃 비교 | `compare_mission_supervisor_layouts("MissionRegion")` |
+| Mission Supervisor 전체 검증 | `run_supervisor_verification()` |
+| 전체 단위검사 | `run_unit_verification()` |
+| 3개 환경 × 4개 주행 검증 | `run_environment_matrix()` |
+| 통합 Stateflow 환경 검증 | `run_integrated_environment_matrix()` |
+| Scenario UI 실행 | `launch_amr_scenario_ui("obstacle", "hospital")` |
+
+## 세부 실행·검증 함수
+
+- `run_amr_mission_supervisor_scenarios.m`: Mission Supervisor 9개 시나리오
+- `run_all_amr_scenarios.m`: 네 주행 시나리오 회귀검증
 - `run_integrated_delivery_scenarios.m`: 통합 normal/obstacle/battery/wrong-turn 검증
-- `run_integrated_environment_matrix.m`: 같은 12개 조합의 lifecycle/병렬 mode 통합 검증
-- `run_amr_milestone01.m`: 최소 수직 절편 재현
+- `run_industrial_supervisor_scenarios.m`: 감독 제어 예제 다섯 시나리오
+- `run_amr_milestone01.m`: 첫 수직 절편 재현
+- `launch_amr_map_ui.m`: 기본 지도 UI
 
-각 스크립트는 프로젝트 루트를 기준으로 동작하며 외부 폴더에 접근하지 않는다.
+## 생성·내부 유지보수 함수
 
-Mission Supervisor를 볼 때는 `models/prototypes/amr_mission_supervisor.slx`만 연다.
-이전 `v1`, `v2_graphical` 모델은 `models/history/`의 비교·감사용 파일이다.
+아래 함수는 모델을 다시 만들거나 그래픽을 갱신할 때만 사용한다.
+
+- `layout_amr_mission_supervisor.m`
+- `build_amr_milestone01_skeleton.m`
+- `build_amr_scenario_model_skeleton.m`
+- `build_amr_industrial_supervisor.m`
+- `build_amr_integrated_system.m`
+- `create_default_amr_params.m`
+
+Mission Supervisor 정식본·버전·비교 자료는 `models/mission_supervisor`, 전체 통합 모델은
+`models/integrated_system`, 학습 모델은 `models/examples`에서 찾는다. `work`의 모델은 직접
+열지 않는다.

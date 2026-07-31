@@ -8,7 +8,7 @@ end
 scriptFolder = fileparts(mfilename("fullpath"));
 projectRoot = fileparts(scriptFolder);
 if strlength(options.ModelPath) == 0
-    modelPath = string(fullfile(projectRoot, "models", "prototypes", ...
+    modelPath = string(fullfile(projectRoot, "models", "mission_supervisor", ...
         "amr_mission_supervisor.slx"));
 else
     modelPath = options.ModelPath;

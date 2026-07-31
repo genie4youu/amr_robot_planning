@@ -14,8 +14,8 @@
 ## 예정 모델
 
 ```text
-models/prototypes/amr_stateflow_mission_prototype.slx
-models/system/amr_system.slx        통합 단계에서 생성
+models/examples/amr_stateflow_mission_prototype.slx
+models/integrated_system/amr_integrated_delivery_system.slx  통합 실행 모델
 ```
 
 ## 예정 데이터

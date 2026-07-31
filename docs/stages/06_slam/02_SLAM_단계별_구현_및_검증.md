@@ -37,7 +37,7 @@ src/+amr/+slam/optimizePoseGraph.m
 src/+amr/+slam/rebuildMapFromScans.m
 tests/unit/verify_scan_matching.m
 tests/unit/verify_pose_graph.m
-models/prototypes/amr_slam_prototype.slx
+models/examples/amr_slam_prototype.slx
 ```
 
 ## 검증 시나리오

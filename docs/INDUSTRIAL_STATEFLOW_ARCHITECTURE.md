@@ -1,6 +1,6 @@
 # 실무형 Stateflow 감독 제어 구조
 
-이 문서는 `models/system/amr_industrial_supervisor.slx`의 역할과 경계를 설명한다. 목표는 상태를 무작정 많이 만드는 것이 아니라, 동시에 변하는 관심사를 병렬 영역으로 분리하고 위험 상태를 상위에서 래치하는 것이다.
+이 문서는 `models/examples/amr_industrial_supervisor.slx`의 역할과 경계를 설명한다. 목표는 상태를 무작정 많이 만드는 것이 아니라, 동시에 변하는 관심사를 병렬 영역으로 분리하고 위험 상태를 상위에서 래치하는 것이다.
 
 ## 계층 구조
 
@@ -65,16 +65,16 @@ Stateflow 출력은 이러한 구성요소를 enable하거나 mode를 선택하�
 
 ```matlab
 projectRoot = setup_amr_project();
-load_system('models/system/amr_industrial_supervisor.slx')
-open_system('models/system/amr_industrial_supervisor.slx')
+load_system('models/examples/amr_industrial_supervisor.slx')
+open_system('models/examples/amr_industrial_supervisor.slx')
 industrialSummary = run_industrial_supervisor_scenarios();
 ```
 
 Plant 신호와 함께 통합 실행하려면 다음을 사용한다.
 
 ```matlab
-load_system('models/system/amr_integrated_delivery_system.slx')
-open_system('models/system/amr_integrated_delivery_system.slx')
+load_system('models/integrated_system/amr_integrated_delivery_system.slx')
+open_system('models/integrated_system/amr_integrated_delivery_system.slx')
 integratedSummary = run_integrated_delivery_scenarios();
 ```
 

@@ -50,7 +50,7 @@ v1 구현 전의 gap 분석을 보존하며, 실제 구현·실행 증거는 아
 
 | 증거 ID | 구현·시험 파일 | 연결된 계획 시험 | 판정 범위 |
 | --- | --- | --- | --- |
-| `EV_AMR_V1_001` | `models/prototypes/amr_mission_supervisor.slx` | `TC_AMR_001`, `003`, `005`, `008`, `009`, `011`, `012`, `014..016` | 단일 Supervisor와 scripted Plant 수직 절편 |
+| `EV_AMR_V1_001` | `models/mission_supervisor/amr_mission_supervisor.slx` | `TC_AMR_001`, `003`, `005`, `008`, `009`, `011`, `012`, `014..016` | 단일 Supervisor와 scripted Plant 수직 절편 |
 | `EV_AMR_V1_002` | `scripts/run_amr_mission_supervisor_scenarios.m` | 위 시험의 부분 또는 전체 시나리오 | 9/9 PASS |
 | `EV_AMR_V1_003` | `tests/unit/SupervisorInterfacesTest.m` | L1 계약·telemetry 판정 | 16/16 PASS |
 | `EV_AMR_V1_004` | `tests/unit/verify_supervisor_requirements.m` | L1 요구사항 포맷 계약 | 제한된 포맷 검사 |

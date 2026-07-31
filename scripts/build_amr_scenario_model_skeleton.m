@@ -3,7 +3,7 @@ function modelPath = build_amr_scenario_model_skeleton()
 % Stateflow states, chart data, and chart signal lines are added separately.
 
 projectRoot = fileparts(fileparts(mfilename("fullpath")));
-modelDirectory = fullfile(projectRoot, "models", "prototypes");
+modelDirectory = fullfile(projectRoot, "models", "examples");
 modelName = "amr_scenario_supervisor";
 modelPath = fullfile(modelDirectory, modelName + ".slx");
 

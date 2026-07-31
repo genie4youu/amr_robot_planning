@@ -15,7 +15,7 @@ scenarioCode = scenarioId + 4 * (environmentId - 1);
 scriptDirectory = fileparts(mfilename("fullpath"));
 projectDirectory = fileparts(scriptDirectory);
 sourceDirectory = fullfile(projectDirectory, "src");
-modelFile = fullfile(projectDirectory, "models", "prototypes", ...
+modelFile = fullfile(projectDirectory, "models", "examples", ...
     "amr_scenario_supervisor.slx");
 addpath(scriptDirectory, sourceDirectory);
 

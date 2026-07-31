@@ -148,8 +148,9 @@ Robot Plant → Encoder / IMU / LiDAR
 ```text
 docs/stages/             학습 순서와 작업 안내
 src/+amr/                재사용 MATLAB 함수
-models/prototypes/       단계별 Simulink 실험 모델
-models/system/           통합 모델
+models/examples/       단계별 Simulink 실험 모델
+models/integrated_system/ 전체 통합 실행 모델
+models/mission_supervisor/ Mission Supervisor 정식본과 버전 이력
 data/maps/               지도
 data/scenarios/          시나리오 입력
 tests/unit/              작은 함수 검증
@@ -165,7 +166,7 @@ data/expected/           기준 검증 데이터
 ### 초기
 
 - 알고리즘은 MATLAB 함수로 먼저 확인한다.
-- 단계별 작은 모델은 `models/prototypes/`에 둔다.
+- 단계별 작은 모델은 `models/examples/`에 둔다.
 - Base Workspace에 남아 있는 변수에 의존하지 않는다.
 
 ### 통합

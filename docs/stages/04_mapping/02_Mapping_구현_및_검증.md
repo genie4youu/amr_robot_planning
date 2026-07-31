@@ -22,7 +22,7 @@ src/+amr/+mapping/logOddsToProbability.m
 src/+amr/+mapping/updateOccupancyGrid.m
 src/+amr/+verification/compareOccupancyMaps.m
 tests/unit/verify_mapping_update.m
-models/prototypes/amr_mapping_prototype.slx
+models/examples/amr_mapping_prototype.slx
 ```
 
 ## 검증 시나리오

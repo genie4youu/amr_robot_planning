@@ -82,6 +82,19 @@ labelPathOverlaps = inspectLabelPathOverlaps( ...
     transitionGeometry, rules);
 pathPathInteractions = inspectPathPathInteractions( ...
     transitionGeometry, rules);
+hierarchyInventory = buildHierarchyInventory( ...
+    chart, states, stateGeometry, transitionGeometry);
+oversizedStateViolations = inspectOversizedStates( ...
+    states, stateGeometry, rules);
+localCoordinateOffsetViolations = inspectLocalCoordinateOffsets( ...
+    hierarchyInventory, rules);
+transitionCanvasExpansionWarnings = ...
+    inspectTransitionCanvasExpansionWarnings( ...
+    hierarchyInventory, rules);
+directRouteOpportunityViolations = inspectDirectRouteOpportunities( ...
+    transitions, transitionGeometry, stateGeometry, rules);
+subviewerCornerBiasViolations = inspectSubviewerCornerBias( ...
+    hierarchyInventory, rules);
 
 hardViolations = [
     badIntersections
@@ -126,6 +139,13 @@ approximateRoutingViolations = [
     pathShapeViolations
     labelPathOverlaps
     pathPathInteractions
+    ];
+layoutQualityViolations = [
+    oversizedStateViolations
+    localCoordinateOffsetViolations
+    transitionCanvasExpansionWarnings
+    directRouteOpportunityViolations
+    subviewerCornerBiasViolations
     ];
 
 report = struct;
@@ -221,6 +241,30 @@ report.RoutingLimitations = [
     "The API does not reveal whether a valid MidPoint or O'Clock value " + ...
     "was assigned explicitly by a layout specification."
     ];
+report.HierarchyInventory = hierarchyInventory;
+report.OversizedStateViolations = oversizedStateViolations;
+report.OversizedStateViolationCount = ...
+    uint32(height(oversizedStateViolations));
+report.LocalCoordinateOffsetViolations = localCoordinateOffsetViolations;
+report.LocalCoordinateOffsetViolationCount = ...
+    uint32(height(localCoordinateOffsetViolations));
+report.TransitionCanvasExpansionWarnings = ...
+    transitionCanvasExpansionWarnings;
+report.TransitionCanvasExpansionWarningCount = ...
+    uint32(height(transitionCanvasExpansionWarnings));
+report.DirectRouteOpportunityViolations = ...
+    directRouteOpportunityViolations;
+report.DirectRouteOpportunityViolationCount = ...
+    uint32(height(directRouteOpportunityViolations));
+report.SubviewerCornerBiasViolations = subviewerCornerBiasViolations;
+report.SubviewerCornerBiasViolationCount = ...
+    uint32(height(subviewerCornerBiasViolations));
+report.LayoutQualityViolations = layoutQualityViolations;
+report.LayoutQualityViolationCount = ...
+    uint32(height(layoutQualityViolations));
+report.LayoutQualityPassed = isempty(layoutQualityViolations);
+report.LayoutQualityDiagnostic = formatDiagnostic( ...
+    layoutQualityViolations, "No recursive layout-quality violations.");
 
 % Keep the cleanup object alive until the report is complete.
 if isempty(cleanup)
@@ -230,13 +274,14 @@ end
 end
 
 function rules = graphicalRules()
+profile = amr.stateflow.graphicalLayoutProfile;
 rules = struct;
 rules.GeometryTolerancePixels = 2;
-rules.MinimumHorizontalGapPixels = 80;
-rules.MinimumVerticalGapPixels = 110;
+rules.MinimumHorizontalGapPixels = profile.MinimumHorizontalStateGap;
+rules.MinimumVerticalGapPixels = profile.MinimumVerticalStateGap;
 rules.MinimumOutgoingEndpointGapPixels = 30;
-rules.StateFontSize = 10;
-rules.TransitionFontSize = 9;
+rules.StateFontSize = profile.StateFontSize;
+rules.TransitionFontSize = profile.TransitionFontSize;
 rules.TextWidthFactor = 0.47;
 rules.TextLineHeightFactor = 1.35;
 rules.TextHorizontalPaddingPixels = 18;
@@ -254,6 +299,22 @@ rules.MinimumOuterLaneEnvelopeClearancePixels = 40;
 rules.MaximumOuterLaneEnvelopeClearancePixels = 180;
 rules.MinimumScopeStateBBoxUtilization = 0.50;
 rules.MaximumScopeCanvasExpansionPixels = 180;
+rules.MaximumPreferredCanvasExpansionPixels = 100;
+rules.MaximumUnnecessaryLocalOffsetPixels = 200;
+rules.MinimumSubviewerStateMinX = profile.LocalMinimumRange(1);
+rules.MaximumSubviewerStateMinX = profile.LocalMaximumRange(1);
+rules.MinimumSubviewerStateMinY = profile.LocalMinimumRange(2);
+rules.MaximumSubviewerStateMinY = profile.LocalMaximumRange(2);
+rules.MinimumSubviewerPageAxisUtilization = ...
+    profile.MinimumContentAxisFraction;
+rules.MaximumSubviewerPageWidthUtilization = ...
+    profile.MaximumContentFraction(1);
+rules.MaximumSubviewerPageHeightUtilization = ...
+    profile.MaximumContentFraction(2);
+rules.MaximumStateWidthToTextRatio = 3.0;
+rules.MaximumStateRowWidthFraction = 0.50;
+rules.MaximumDirectRouteMidPointDeviationPixels = 5;
+rules.MaximumSubviewerCenterOffsetFraction = 0.20;
 rules.MaximumBidirectionalEnvelopeExcursionPixels = 120;
 rules.MaximumBidirectionalDetourRatio = 2.20;
 rules.ShortAdjacentStateGapPixels = 200;
@@ -1472,6 +1533,527 @@ for firstIndex = 1:transitionCount
     end
 end
 violations = finishCollector(collector);
+end
+
+function inventory = buildHierarchyInventory( ...
+        chart, states, stateGeometry, transitionGeometry)
+containers = {chart};
+junctions = chart.find("-isa", "Stateflow.Junction");
+functions = [ ...
+    chart.find("-isa", "Stateflow.Function")
+    chart.find("-isa", "Stateflow.EMFunction")
+    chart.find("-isa", "Stateflow.TruthTable")
+    ];
+for stateIndex = 1:numel(states)
+    stateKey = stateGeometry.Key(stateIndex);
+    hasState = any(stateGeometry.ParentKey == stateKey);
+    hasTransition = any(transitionGeometry.ParentKey == stateKey);
+    hasJunction = objectHasDirectChild(states(stateIndex), junctions);
+    hasFunction = objectHasDirectChild(states(stateIndex), functions);
+    if hasState || hasTransition || hasJunction || hasFunction
+        containers{end + 1} = states(stateIndex); %#ok<AGROW>
+    end
+end
+
+containerCount = numel(containers);
+path = strings(containerCount, 1);
+name = strings(containerCount, 1);
+kind = strings(containerCount, 1);
+depth = zeros(containerCount, 1);
+directStateCount = zeros(containerCount, 1);
+directTransitionCount = zeros(containerCount, 1);
+junctionCount = zeros(containerCount, 1);
+functionCount = zeros(containerCount, 1);
+stateMinX = nan(containerCount, 1);
+stateMinY = nan(containerCount, 1);
+stateMaxX = nan(containerCount, 1);
+stateMaxY = nan(containerCount, 1);
+stateWidth = nan(containerCount, 1);
+stateHeight = nan(containerCount, 1);
+graphicMinX = nan(containerCount, 1);
+graphicMinY = nan(containerCount, 1);
+graphicMaxX = nan(containerCount, 1);
+graphicMaxY = nan(containerCount, 1);
+graphicWidth = nan(containerCount, 1);
+graphicHeight = nan(containerCount, 1);
+leftExpansion = zeros(containerCount, 1);
+rightExpansion = zeros(containerCount, 1);
+topExpansion = zeros(containerCount, 1);
+bottomExpansion = zeros(containerCount, 1);
+centerOffsetX = zeros(containerCount, 1);
+centerOffsetY = zeros(containerCount, 1);
+canvasMinX = nan(containerCount, 1);
+canvasMinY = nan(containerCount, 1);
+canvasWidth = nan(containerCount, 1);
+canvasHeight = nan(containerCount, 1);
+canvasCenterOffsetX = nan(containerCount, 1);
+canvasCenterOffsetY = nan(containerCount, 1);
+leftMargin = nan(containerCount, 1);
+rightMargin = nan(containerCount, 1);
+topMargin = nan(containerCount, 1);
+bottomMargin = nan(containerCount, 1);
+meanRouteLengthRatio = ones(containerCount, 1);
+maximumRouteLengthRatio = ones(containerCount, 1);
+maximumRouteDeviation = zeros(containerCount, 1);
+
+for containerIndex = 1:containerCount
+    container = containers{containerIndex};
+    key = objectKey(container);
+    stateMask = stateGeometry.ParentKey == key;
+    transitionMask = transitionGeometry.ParentKey == key;
+    path(containerIndex) = hierarchyPath(container);
+    name(containerIndex) = hierarchyName(container);
+    kind(containerIndex) = hierarchyKind(container);
+    depth(containerIndex) = hierarchyDepth(container);
+    directStateCount(containerIndex) = nnz(stateMask);
+    directTransitionCount(containerIndex) = nnz(transitionMask);
+    junctionCount(containerIndex) = countDirectChildren(container, junctions);
+    functionCount(containerIndex) = countDirectChildren(container, functions);
+    if ~any(stateMask)
+        continue
+    end
+
+    positions = stateGeometry.Position(stateMask, :);
+    stateBounds = boundsFromRectangles(positions);
+    stateMinX(containerIndex) = stateBounds(1);
+    stateMinY(containerIndex) = stateBounds(2);
+    stateMaxX(containerIndex) = stateBounds(3);
+    stateMaxY(containerIndex) = stateBounds(4);
+    stateWidth(containerIndex) = stateBounds(3) - stateBounds(1);
+    stateHeight(containerIndex) = stateBounds(4) - stateBounds(2);
+
+    graphicBounds = stateBounds;
+    if any(transitionMask)
+        pathX = [ ...
+            transitionGeometry.SourceEndpoint(transitionMask, 1)
+            transitionGeometry.MidPoint(transitionMask, 1)
+            transitionGeometry.DestinationEndpoint(transitionMask, 1)];
+        pathY = [ ...
+            transitionGeometry.SourceEndpoint(transitionMask, 2)
+            transitionGeometry.MidPoint(transitionMask, 2)
+            transitionGeometry.DestinationEndpoint(transitionMask, 2)];
+        labels = transitionGeometry.LabelPosition(transitionMask, :);
+        graphicBounds = [ ...
+            min([stateBounds(1); pathX; labels(:, 1)]), ...
+            min([stateBounds(2); pathY; labels(:, 2)]), ...
+            max([stateBounds(3); pathX; labels(:, 1) + labels(:, 3)]), ...
+            max([stateBounds(4); pathY; labels(:, 2) + labels(:, 4)])];
+
+        localTransitionIndices = find(transitionMask);
+        ratios = ones(numel(localTransitionIndices), 1);
+        deviations = zeros(numel(localTransitionIndices), 1);
+        for localIndex = 1:numel(localTransitionIndices)
+            transitionIndex = localTransitionIndices(localIndex);
+            points = transitionPathPoints(transitionGeometry, transitionIndex);
+            directLength = norm(points(3, :) - points(1, :));
+            if directLength > eps
+                ratios(localIndex) = ...
+                    approximatePathLength(points) / directLength;
+                deviations(localIndex) = pointToSegmentDistance( ...
+                    points(2, :), points(1, :), points(3, :));
+            end
+        end
+        meanRouteLengthRatio(containerIndex) = mean(ratios);
+        maximumRouteLengthRatio(containerIndex) = max(ratios);
+        maximumRouteDeviation(containerIndex) = max(deviations);
+    end
+
+    graphicMinX(containerIndex) = graphicBounds(1);
+    graphicMinY(containerIndex) = graphicBounds(2);
+    graphicMaxX(containerIndex) = graphicBounds(3);
+    graphicMaxY(containerIndex) = graphicBounds(4);
+    graphicWidth(containerIndex) = graphicBounds(3) - graphicBounds(1);
+    graphicHeight(containerIndex) = graphicBounds(4) - graphicBounds(2);
+    leftExpansion(containerIndex) = stateBounds(1) - graphicBounds(1);
+    rightExpansion(containerIndex) = graphicBounds(3) - stateBounds(3);
+    topExpansion(containerIndex) = stateBounds(2) - graphicBounds(2);
+    bottomExpansion(containerIndex) = graphicBounds(4) - stateBounds(4);
+    stateCenter = [(stateBounds(1) + stateBounds(3)) / 2, ...
+        (stateBounds(2) + stateBounds(4)) / 2];
+    graphicCenter = [(graphicBounds(1) + graphicBounds(3)) / 2, ...
+        (graphicBounds(2) + graphicBounds(4)) / 2];
+    centerOffsetX(containerIndex) = graphicCenter(1) - stateCenter(1);
+    centerOffsetY(containerIndex) = graphicCenter(2) - stateCenter(2);
+
+    if isa(container, "Stateflow.State") && ...
+            logical(container.IsSubchart)
+        canvas = subviewCanvasRectangle(container);
+        canvasMinX(containerIndex) = canvas(1);
+        canvasMinY(containerIndex) = canvas(2);
+        canvasWidth(containerIndex) = canvas(3);
+        canvasHeight(containerIndex) = canvas(4);
+        canvasCenter = canvas(1:2) + canvas(3:4) / 2;
+        canvasCenterOffsetX(containerIndex) = ...
+            graphicCenter(1) - canvasCenter(1);
+        canvasCenterOffsetY(containerIndex) = ...
+            graphicCenter(2) - canvasCenter(2);
+    end
+
+    if isa(container, "Stateflow.State") && ...
+            ~logical(container.IsSubchart)
+        parentPosition = double(container.Position);
+        titleHeight = 70;
+        leftMargin(containerIndex) = ...
+            stateBounds(1) - parentPosition(1);
+        rightMargin(containerIndex) = parentPosition(1) + ...
+            parentPosition(3) - stateBounds(3);
+        topMargin(containerIndex) = ...
+            stateBounds(2) - (parentPosition(2) + titleHeight);
+        bottomMargin(containerIndex) = parentPosition(2) + ...
+            parentPosition(4) - stateBounds(4);
+    end
+end
+
+inventory = table(path, name, kind, depth, directStateCount, ...
+    directTransitionCount, junctionCount, functionCount, ...
+    stateMinX, stateMinY, stateMaxX, stateMaxY, stateWidth, stateHeight, ...
+    graphicMinX, graphicMinY, graphicMaxX, graphicMaxY, ...
+    graphicWidth, graphicHeight, leftExpansion, rightExpansion, ...
+    topExpansion, bottomExpansion, centerOffsetX, centerOffsetY, ...
+    canvasMinX, canvasMinY, canvasWidth, canvasHeight, ...
+    canvasCenterOffsetX, canvasCenterOffsetY, ...
+    leftMargin, rightMargin, topMargin, bottomMargin, ...
+    meanRouteLengthRatio, maximumRouteLengthRatio, ...
+    maximumRouteDeviation, VariableNames=[ ...
+    "Path", "Name", "Kind", "Depth", "DirectStateCount", ...
+    "DirectTransitionCount", "JunctionCount", "FunctionCount", ...
+    "StateMinX", "StateMinY", "StateMaxX", "StateMaxY", ...
+    "StateWidth", "StateHeight", "GraphicMinX", "GraphicMinY", ...
+    "GraphicMaxX", "GraphicMaxY", "GraphicWidth", "GraphicHeight", ...
+    "LeftExpansion", "RightExpansion", "TopExpansion", ...
+    "BottomExpansion", "CenterOffsetX", "CenterOffsetY", ...
+    "CanvasMinX", "CanvasMinY", "CanvasWidth", "CanvasHeight", ...
+    "CanvasCenterOffsetX", "CanvasCenterOffsetY", ...
+    "LeftMargin", "RightMargin", "TopMargin", "BottomMargin", ...
+    "MeanRouteLengthRatio", "MaximumRouteLengthRatio", ...
+    "MaximumRouteDeviation"]);
+[~, order] = sortrows([inventory.Depth, (1:height(inventory)).'], ...
+    [-1 2]);
+inventory = inventory(order, :);
+end
+
+function violations = inspectOversizedStates(states, geometry, rules)
+collector = createCollector(2 * numel(states));
+for index = 1:numel(states)
+    if logical(states(index).IsSubchart) || ...
+            any(geometry.ParentKey == geometry.Key(index))
+        % A composite representation also reserves space for child
+        % objects. Text width alone is not its required-width estimate.
+        continue
+    end
+    label = replace(string(states(index).LabelString), ...
+        sprintf("\t"), "    ");
+    lines = splitlines(label);
+    if numel(lines) > 10
+        % Dense lifecycle/fault states may intentionally reserve horizontal
+        % space for a readable action block. The 3x text-width rule targets
+        % short states used as routing surfaces.
+        continue
+    end
+    estimatedWidth = double(max(strlength(lines))) * ...
+        rules.TextWidthFactor * double(states(index).FontSize) + ...
+        rules.TextHorizontalPaddingPixels;
+    actualWidth = geometry.Position(index, 3);
+    widthRatio = actualWidth / max(estimatedWidth, 1);
+    if widthRatio > rules.MaximumStateWidthToTextRatio
+        collector = appendViolation(collector, "OversizedStateTextRatio", ...
+            geometry.ParentDisplay(index), geometry.Display(index), "", ...
+            widthRatio, rules.MaximumStateWidthToTextRatio, ...
+            sprintf( ...
+            'State width %.1f; estimated text width %.1f; ratio %.3f.', ...
+            actualWidth, estimatedWidth, widthRatio));
+    end
+
+    siblingMask = geometry.ParentKey == geometry.ParentKey(index);
+    centersY = geometry.Position(:, 2) + geometry.Position(:, 4) / 2;
+    rowTolerance = max(geometry.Position(index, 4) / 2, 30);
+    rowMask = siblingMask & ...
+        abs(centersY - centersY(index)) <= rowTolerance;
+    if nnz(rowMask) < 2
+        continue
+    end
+    rowPositions = geometry.Position(rowMask, :);
+    rowWidth = max(rowPositions(:, 1) + rowPositions(:, 3)) - ...
+        min(rowPositions(:, 1));
+    rowFraction = actualWidth / max(rowWidth, 1);
+    if rowFraction > rules.MaximumStateRowWidthFraction
+        collector = appendViolation(collector, "OversizedStateRowShare", ...
+            geometry.ParentDisplay(index), geometry.Display(index), "", ...
+            rowFraction, rules.MaximumStateRowWidthFraction, ...
+            sprintf('State occupies %.3f of its %d-state row width.', ...
+            rowFraction, nnz(rowMask)));
+    end
+end
+violations = finishCollector(collector);
+end
+
+function violations = inspectLocalCoordinateOffsets(inventory, rules)
+collector = createCollector(2 * height(inventory));
+for index = 1:height(inventory)
+    if inventory.Kind(index) ~= "Subchart" || ...
+            inventory.DirectStateCount(index) == 0
+        continue
+    end
+    excess = max([ ...
+        rules.MinimumSubviewerStateMinX - inventory.StateMinX(index), ...
+        inventory.StateMinX(index) - rules.MaximumSubviewerStateMinX, ...
+        rules.MinimumSubviewerStateMinY - inventory.StateMinY(index), ...
+        inventory.StateMinY(index) - rules.MaximumSubviewerStateMinY, 0]);
+    if excess > rules.GeometryTolerancePixels
+        collector = appendViolation(collector, ...
+            "SubchartLocalCoordinateOffset", ...
+            inventory.Path(index), "Direct child state bbox", "", ...
+            excess, rules.GeometryTolerancePixels, ...
+            sprintf([ ...
+            'State bbox starts at [%.1f %.1f]; permitted local ranges are ' ...
+            'x=[%.1f %.1f], y=[%.1f %.1f]. The y=200 upper bound ' ...
+            'reserves a stable top return lane. Persisted subview ' ...
+            'rectangles are ' ...
+            'editor cameras and are not layout areas.'], ...
+            inventory.StateMinX(index), inventory.StateMinY(index), ...
+            rules.MinimumSubviewerStateMinX, ...
+            rules.MaximumSubviewerStateMinX, ...
+            rules.MinimumSubviewerStateMinY, ...
+            rules.MaximumSubviewerStateMinY));
+    end
+    widthUtilization = inventory.GraphicWidth(index) / ...
+        max(inventory.CanvasWidth(index), 1);
+    heightUtilization = inventory.GraphicHeight(index) / ...
+        max(inventory.CanvasHeight(index), 1);
+    maximumUtilization = max(widthUtilization, heightUtilization);
+    outsidePage = inventory.GraphicMinX(index) < ...
+        inventory.CanvasMinX(index) - rules.GeometryTolerancePixels || ...
+        inventory.GraphicMinY(index) < ...
+        inventory.CanvasMinY(index) - rules.GeometryTolerancePixels || ...
+        inventory.GraphicMaxX(index) > inventory.CanvasMinX(index) + ...
+        inventory.CanvasWidth(index) + rules.GeometryTolerancePixels || ...
+        inventory.GraphicMaxY(index) > inventory.CanvasMinY(index) + ...
+        inventory.CanvasHeight(index) + rules.GeometryTolerancePixels;
+    if outsidePage || ...
+            maximumUtilization < ...
+            rules.MinimumSubviewerPageAxisUtilization || ...
+            widthUtilization > ...
+            rules.MaximumSubviewerPageWidthUtilization || ...
+            heightUtilization > ...
+            rules.MaximumSubviewerPageHeightUtilization
+        collector = appendViolation(collector, ...
+            "SubchartPageUtilization", inventory.Path(index), ...
+            "Graphical bounding box", "Space/Fit page", ...
+            maximumUtilization, ...
+            rules.MinimumSubviewerPageAxisUtilization, ...
+            sprintf([ ...
+            'Page utilization is [width %.3f, height %.3f]; required ' ...
+            'maximum axis >= %.2f, width <= %.2f, height <= %.2f; ' ...
+            'outside page=%d.'], widthUtilization, heightUtilization, ...
+            rules.MinimumSubviewerPageAxisUtilization, ...
+            rules.MaximumSubviewerPageWidthUtilization, ...
+            rules.MaximumSubviewerPageHeightUtilization, outsidePage));
+    end
+end
+violations = finishCollector(collector);
+end
+
+function canvas = subviewCanvasRectangle(container)
+canvas = nan(1, 4);
+try
+    canvas = double(sf('get', double(container.Id), '.subviewS.pos'));
+catch
+end
+if numel(canvas) ~= 4 || any(~isfinite(canvas)) || ...
+        any(canvas(3:4) <= 0)
+    position = double(container.Position);
+    canvas = [0 0 max(2400, position(3) + 400), ...
+        max(1400, position(4) + 400)];
+end
+end
+
+function violations = inspectTransitionCanvasExpansionWarnings( ...
+        inventory, rules)
+collector = createCollector(height(inventory));
+for index = 1:height(inventory)
+    expansions = [inventory.LeftExpansion(index), ...
+        inventory.RightExpansion(index), inventory.TopExpansion(index), ...
+        inventory.BottomExpansion(index)];
+    maximumExpansion = max(expansions);
+    if maximumExpansion > ...
+            rules.MaximumPreferredCanvasExpansionPixels + ...
+            rules.GeometryTolerancePixels
+        collector = appendViolation(collector, ...
+            "TransitionCanvasExpansionWarning", inventory.Path(index), ...
+            "State bounding box", "Graphical bounding box", ...
+            maximumExpansion, rules.MaximumPreferredCanvasExpansionPixels, ...
+            sprintf('Expansion [left right top bottom] is %s pixels.', ...
+            mat2str(expansions, 5)));
+    end
+end
+violations = finishCollector(collector);
+end
+
+function violations = inspectDirectRouteOpportunities( ...
+        transitions, transitionGeometry, stateGeometry, rules)
+collector = createCollector(numel(transitions));
+for transitionIndex = 1:numel(transitions)
+    sourceMatches = find(stateGeometry.Key == ...
+        transitionGeometry.SourceKey(transitionIndex));
+    destinationMatches = find(stateGeometry.Key == ...
+        transitionGeometry.DestinationKey(transitionIndex));
+    if ~isscalar(sourceMatches) || ~isscalar(destinationMatches) || ...
+            sourceMatches == destinationMatches || ...
+            hasReciprocalTransition(transitionGeometry, transitionIndex) || ...
+            hasParallelTransition(transitionGeometry, transitionIndex)
+        continue
+    end
+    sourcePoint = transitionGeometry.SourceEndpoint(transitionIndex, :);
+    destinationPoint = ...
+        transitionGeometry.DestinationEndpoint(transitionIndex, :);
+    directCrossesState = false;
+    for stateIndex = 1:numel(stateGeometry.Key)
+        if stateGeometry.ParentKey(stateIndex) ~= ...
+                transitionGeometry.ParentKey(transitionIndex) || ...
+                stateIndex == sourceMatches || stateIndex == destinationMatches
+            continue
+        end
+        rectangle = insetRectangle( ...
+            stateGeometry.Position(stateIndex, :), ...
+            rules.GeometryTolerancePixels);
+        if segmentIntersectsRectangle(sourcePoint, destinationPoint, rectangle)
+            directCrossesState = true;
+            break
+        end
+        sameHorizontalRow = abs(sourcePoint(2) - destinationPoint(2)) <= ...
+            rules.GeometryTolerancePixels && ...
+            sourcePoint(2) >= stateGeometry.Position(stateIndex, 2) - ...
+            rules.GeometryTolerancePixels && ...
+            sourcePoint(2) <= stateGeometry.Position(stateIndex, 2) + ...
+            stateGeometry.Position(stateIndex, 4) + ...
+            rules.GeometryTolerancePixels;
+        betweenEndpoints = stateGeometry.Position(stateIndex, 1) < ...
+            max(sourcePoint(1), destinationPoint(1)) && ...
+            stateGeometry.Position(stateIndex, 1) + ...
+            stateGeometry.Position(stateIndex, 3) > ...
+            min(sourcePoint(1), destinationPoint(1));
+        if sameHorizontalRow && betweenEndpoints
+            directCrossesState = true;
+            break
+        end
+    end
+    if directCrossesState
+        continue
+    end
+    directCrossesTransition = false;
+    directPath = [sourcePoint; ...
+        (sourcePoint + destinationPoint) / 2; destinationPoint];
+    for pathIndex = 1:numel(transitions)
+        if pathIndex == transitionIndex || ...
+                transitionGeometry.ParentKey(pathIndex) ~= ...
+                transitionGeometry.ParentKey(transitionIndex)
+            continue
+        end
+        pathPoints = transitionPathPoints(transitionGeometry, pathIndex);
+        if polylineInteraction(directPath, pathPoints, rules)
+            directCrossesTransition = true;
+            break
+        end
+    end
+    if directCrossesTransition
+        continue
+    end
+    deviation = pointToSegmentDistance( ...
+        transitionGeometry.MidPoint(transitionIndex, :), ...
+        sourcePoint, destinationPoint);
+    if deviation > rules.MaximumDirectRouteMidPointDeviationPixels + ...
+            rules.GeometryTolerancePixels
+        collector = appendViolation(collector, "DirectRouteOpportunity", ...
+            transitionGeometry.ParentDisplay(transitionIndex), ...
+            transitionGeometry.Display(transitionIndex), "", deviation, ...
+            rules.MaximumDirectRouteMidPointDeviationPixels, ...
+            sprintf([ ...
+            'Direct segment is clear of states and sibling paths but ' ...
+            'midpoint deviation is %.1f pixels; ' ...
+            'path %s.'], deviation, mat2str(transitionPathPoints( ...
+            transitionGeometry, transitionIndex), 5)));
+    end
+end
+violations = finishCollector(collector);
+end
+
+function violations = inspectSubviewerCornerBias(inventory, rules)
+collector = createCollector(height(inventory));
+for index = 1:height(inventory)
+    if ~ismember(inventory.Kind(index), ["Chart", "Subchart"]) || ...
+            inventory.DirectStateCount(index) == 0
+        continue
+    end
+    fraction = max([ ...
+        abs(inventory.CenterOffsetX(index)) / ...
+        max(inventory.GraphicWidth(index), 1), ...
+        abs(inventory.CenterOffsetY(index)) / ...
+        max(inventory.GraphicHeight(index), 1)]);
+    if fraction > rules.MaximumSubviewerCenterOffsetFraction
+        collector = appendViolation(collector, "SubviewerCornerBias", ...
+            inventory.Path(index), "State bounding box", ...
+            "Graphical bounding box", fraction, ...
+            rules.MaximumSubviewerCenterOffsetFraction, ...
+            sprintf('Graphical/state bbox center offset is [%.1f %.1f].', ...
+            inventory.CenterOffsetX(index), ...
+            inventory.CenterOffsetY(index)));
+    end
+end
+violations = finishCollector(collector);
+end
+
+function present = objectHasDirectChild(parent, objects)
+present = countDirectChildren(parent, objects) > 0;
+end
+
+function count = countDirectChildren(parent, objects)
+count = 0;
+for index = 1:numel(objects)
+    if isequal(objects(index).getParent, parent)
+        count = count + 1;
+    end
+end
+end
+
+function bounds = boundsFromRectangles(rectangles)
+bounds = [min(rectangles(:, 1)), min(rectangles(:, 2)), ...
+    max(rectangles(:, 1) + rectangles(:, 3)), ...
+    max(rectangles(:, 2) + rectangles(:, 4))];
+end
+
+function name = hierarchyName(container)
+name = string(container.Name);
+end
+
+function kind = hierarchyKind(container)
+if isa(container, "Stateflow.Chart")
+    kind = "Chart";
+elseif logical(container.IsSubchart)
+    kind = "Subchart";
+else
+    kind = "CompositeState";
+end
+end
+
+function depth = hierarchyDepth(container)
+depth = 0;
+if isa(container, "Stateflow.Chart")
+    return
+end
+parent = container.getParent;
+while isa(parent, "Stateflow.State")
+    depth = depth + 1;
+    parent = parent.getParent;
+end
+depth = depth + 1;
+end
+
+function path = hierarchyPath(container)
+if isa(container, "Stateflow.Chart")
+    path = string(container.Path);
+    return
+end
+path = string(container.Path) + "/" + string(container.Name);
 end
 
 function [overlapWidth, overlapHeight] = rectangleOverlap(first, second)

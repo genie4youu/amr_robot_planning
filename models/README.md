@@ -1,23 +1,32 @@
 # Simulink 및 Stateflow 모델
 
+모델의 상태가 아니라 **모델 종류를 먼저** 기준으로 나눈다. 한 모델의 정식본, 버전 이력,
+비교 자료는 같은 폴더 안에 둔다.
+
 ```text
-prototypes/  단계별 작은 실험 모델
-system/      최종 통합 모델
-libraries/   실제 재사용 필요가 확인된 라이브러리
-history/     이전 버전 비교용, 일반 실행에서는 열지 않음
+models/
+├─ mission_supervisor/  Mission Supervisor 정식본·버전·비교 자료
+├─ integrated_system/   전체 AMR 통합 실행 모델
+└─ examples/            단계별 학습·실험 모델
 ```
-
-현재는 모델을 생성하지 않는다. 각 단계에서 MATLAB 함수가 먼저 검증된 뒤 작은 prototype 모델을 만든다.
-
-현재 최상위 통합 모델은 `models/system/amr_integrated_delivery_system.slx`다. 단계별 prototype과 검증된 system 모델을 분리해 관리한다.
 
 ## 지금 열 파일
 
-| 목적 | 정식 파일 |
+| 목적 | 파일 |
 | --- | --- |
-| 최신 Mission Supervisor와 Stateflow 그래픽 확인 | `prototypes/amr_mission_supervisor.slx` |
-| 전체 AMR 시스템 실행 | `system/amr_integrated_delivery_system.slx` |
-| Scenario Lab 학습 | `prototypes/amr_scenario_supervisor.slx` |
+| Mission Supervisor 정식 기준 모델 | `mission_supervisor/amr_mission_supervisor.slx` |
+| 전체 AMR 통합 시스템 | `integrated_system/amr_integrated_delivery_system.slx` |
+| 두 Stateflow 레이아웃 비교 | `mission_supervisor/comparison/README.md` |
+| Mission Supervisor 변경 순서 | `mission_supervisor/versions/README.md` |
+| Scenario Supervisor 학습 | `examples/amr_scenario_supervisor.slx` |
 
-활성 모델 파일명에는 `v1`, `v2`, `final`, `latest`를 붙이지 않는다. 최신본은 버전 없는
-정식 이름을 사용하고, 교체된 모델만 `history/`에서 날짜와 용도를 파일명에 기록한다.
+일반 사용에서는 프로젝트 루트의 `work/`를 열지 않는다. Mission Supervisor 관련 파일은
+모두 `mission_supervisor/`에서 찾는다.
+
+## 앞으로의 업데이트 규칙
+
+1. 모든 의미 있는 수정안은 `mission_supervisor/versions`에 다음 `vNN` 번호로 영구 보존한다.
+2. 같은 단계의 비교안은 같은 `vNN` 번호에 `a`, `b` 분기 문자를 붙인다.
+3. 비교 함수와 화면만 `mission_supervisor/comparison`에 두고 모델 복사본은 만들지 않는다.
+4. 선택한 버전의 복사본만 `mission_supervisor/amr_mission_supervisor.slx`로 승격한다.
+5. 결과 보고에서는 사용자가 실제로 열 모델과 버전 번호를 가장 먼저 제시한다.

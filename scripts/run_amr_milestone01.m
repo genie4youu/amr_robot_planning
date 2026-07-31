@@ -8,7 +8,7 @@ function results = run_amr_milestone01()
 scriptDirectory = fileparts(mfilename("fullpath"));
 projectDirectory = fileparts(scriptDirectory);
 sourceDirectory = fullfile(projectDirectory, "src");
-modelFile = fullfile(projectDirectory, "models", "prototypes", ...
+modelFile = fullfile(projectDirectory, "models", "examples", ...
     "amr_milestone01.slx");
 resultDirectory = fullfile(projectDirectory, "results");
 

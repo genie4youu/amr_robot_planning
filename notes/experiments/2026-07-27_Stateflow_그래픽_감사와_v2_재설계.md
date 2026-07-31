@@ -2,9 +2,9 @@
 
 ## 범위와 보호 조치
 
-- 감사 대상 원본: `models/prototypes/amr_mission_supervisor_v1.slx`
+- 감사 대상 원본: `models/mission_supervisor/versions/amr_mission_supervisor_v01_logic_baseline_2026_07_24.slx`
 - 원본 SHA-256: `6205664FC16980055E717A33EB1B166A804095709F7C3C5F2759D6FDF60DD6B7`
-- 재설계 결과: `models/prototypes/amr_mission_supervisor_v2_graphical.slx`
+- 재설계 결과: `models/mission_supervisor/versions/amr_mission_supervisor_v02a_curved_attempt_2026_07_27.slx`
 - 최종 전체 배치 전 백업:
   `work/backups/amr_mission_supervisor_v2_graphical_pre_layout_20260727_102331.slx`
 - 기존 레이아웃 스크립트는 감사 전에 실행하지 않았다.

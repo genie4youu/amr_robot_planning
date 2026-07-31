@@ -2,6 +2,8 @@
 
 ROS 2와 유료 로봇 툴박스 없이 MATLAB, Simulink, Stateflow만 사용해 실내 배송 AMR의 핵심 알고리즘과 상위 제어 구조를 직접 구현한 학습 프로젝트입니다.
 
+처음 사용하는 경우 [여기서 시작](00_여기서_시작.md)에서 목적에 맞는 모델 하나를 고릅니다.
+
 이 저장소는 단순 경로 그림이 아니라 다음 수직 절편을 실행 가능한 형태로 연결합니다.
 
 ```text
@@ -68,6 +70,21 @@ Differential-Drive Plant → Playback UI and Logs
 - Simulink Test
 - ROS 2, Nav2, Gazebo
 
+## Stateflow 최종 레이아웃
+
+Mission Supervisor의 현재 최종본은 `models/mission_supervisor/amr_mission_supervisor.slx`이며,
+버전 이력의 `v07b_minimum_curvature_readable_fit`과 바이트 단위로 동일합니다.
+
+- `v08a_current_layout_snapshot` — 최종 선택 시점의 원본 스냅샷, `v07b`와 동일
+- `v08b_straight_or_orthogonal` — 비교 후 폐기
+
+과거 `v07a`와 `v07b`를 다시 비교하려면
+`compare_mission_supervisor_layouts("MissionRegion")`을 실행합니다.
+
+논리 기준선부터 현재 비교본까지의 변경 순서는
+[`models/mission_supervisor/versions/README.md`](models/mission_supervisor/versions/README.md)에서
+`v01 → v08`로 확인할 수 있습니다.
+
 ## 빠른 시작
 
 권장 방법은 저장소 루트의 MATLAB Project 파일을 여는 것입니다.
@@ -104,8 +121,8 @@ integratedEnvironmentSummary = run_integrated_environment_matrix();
 자세한 설치와 모델 실행 방법은 [Getting Started](docs/GETTING_STARTED.md)를 참고하십시오.
 
 Stateflow Supervisor를 바로 확인하려면 버전 없는 정식 모델
-`models/prototypes/amr_mission_supervisor.slx`를 엽니다. `models/history/`의 모델은 비교용
-이전본이므로 일반 학습과 실행에서는 열지 않습니다.
+`models/mission_supervisor/amr_mission_supervisor.slx`를 엽니다. 같은 폴더의 `versions/`는
+변경 이력, `comparison/`은 현재 두 버전의 비교 안내입니다.
 
 VS Code에서는 `AMRRobotPlanning.code-workspace`를 열면 MATLAB 생성 폴더가 탐색과 검색에서
 제외되고 공식 MATLAB·Codex 확장을 권장합니다. Codex의 프로젝트별 작업 규칙은 `AGENTS.md`에 있습니다.
@@ -116,16 +133,21 @@ MATLAB Project의 Shortcuts에는 학습 문서, 단위검사, 통합 모델과 
 
 ```text
 amr_robot_planning/
-├─ setup_amr_project.m       MATLAB path 초기화
+├─ 00_여기서_시작.md         처음 보는 사용자를 위한 한 페이지 안내
 ├─ AMRRobotPlanning.prj      MATLAB Project 진입점
+├─ setup_amr_project.m       Project를 쓰지 않을 때의 path 초기화
 ├─ AMRRobotPlanning.code-workspace
 ├─ AGENTS.md                 Codex 프로젝트 규칙
 ├─ src/+amr/                 재사용 가능한 알고리즘 패키지
 ├─ scripts/                  모델 생성, 실행, UI, 회귀검증
-├─ models/                   Simulink/Stateflow 모델 4개
+├─ models/
+│  ├─ mission_supervisor/    정식본·버전 이력·레이아웃 비교
+│  ├─ integrated_system/     전체 AMR 통합 실행 모델
+│  └─ examples/              단계별 학습 모델
 ├─ tests/unit/               assert 기반 단위검사
 ├─ data/expected/            검증 기준 MAT 파일
 ├─ notes/                    실제 프롬프트와 시행착오
+├─ work/                     내부 백업·디버그·중간 생성물
 └─ docs/
    ├─ README.md              학습 문서 길잡이
    ├─ THEORY_INDEX.md        14단계 이론·구현 학습 순서

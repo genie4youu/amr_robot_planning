@@ -7,7 +7,7 @@
 
 ## 2026-07-24 실행 결과
 
-대상은 `models/prototypes/amr_mission_supervisor.slx`이며, 기존 시스템 모델은
+대상은 `models/mission_supervisor/amr_mission_supervisor.slx`이며, 기존 시스템 모델은
 변경하지 않았다. 실행 환경은 MATLAB R2025b Update 5, fixed-step discrete
 solver, Supervisor sample time `0.05 s`다.
 

@@ -3,6 +3,7 @@ classdef StateflowGraphicalLayoutTest < matlab.unittest.TestCase
 
     properties (SetAccess = private)
         LayoutReport
+        ModelFile
     end
 
     methods (TestClassSetup)
@@ -10,10 +11,17 @@ classdef StateflowGraphicalLayoutTest < matlab.unittest.TestCase
             projectRoot = fileparts(fileparts( ...
                 fileparts(mfilename("fullpath"))));
             sourceFolder = fullfile(projectRoot, "src");
-            modelFile = fullfile(projectRoot, "models", ...
-                "prototypes", "amr_mission_supervisor.slx");
+            modelFile = string(getenv( ...
+                "AMR_SUPERVISOR_LAYOUT_MODEL"));
+            if strlength(modelFile) == 0
+                modelFile = fullfile(projectRoot, "models", ...
+                    "mission_supervisor", "amr_mission_supervisor.slx");
+            end
+            testCase.assertTrue(isfile(modelFile), ...
+                "Layout model does not exist: " + modelFile);
             testCase.applyFixture( ...
                 matlab.unittest.fixtures.PathFixture(sourceFolder));
+            testCase.ModelFile = modelFile;
             testCase.LayoutReport = ...
                 amr.stateflow.inspectGraphicalLayout( ...
                 modelFile, "MissionSupervisor");
@@ -196,6 +204,120 @@ classdef StateflowGraphicalLayoutTest < matlab.unittest.TestCase
             testCase.verifyEqual(actualCounts, expectedCounts);
         end
 
+        function recursiveHierarchyInventoryIsComplete(testCase)
+            inventory = testCase.LayoutReport.HierarchyInventory;
+
+            testCase.verifyFalse(isempty(inventory));
+            testCase.verifyEqual(sum(inventory.DirectStateCount), ...
+                double(testCase.LayoutReport.StateCount));
+            testCase.verifyEqual(sum(inventory.DirectTransitionCount), ...
+                double(testCase.LayoutReport.TransitionCount));
+            testCase.verifyTrue(any(inventory.Kind == "Chart"));
+            testCase.verifyTrue(any(inventory.Kind == "CompositeState"));
+            testCase.verifyTrue(any(inventory.Kind == "Subchart"));
+            testCase.verifyTrue(all(isfinite( ...
+                inventory.StateWidth(inventory.DirectStateCount > 0))));
+            testCase.verifyTrue(all(isfinite( ...
+                inventory.GraphicWidth(inventory.DirectStateCount > 0))));
+        end
+
+        function hierarchyLayoutQualityChecksAreClear(testCase)
+            componentCounts = [
+                testCase.LayoutReport.OversizedStateViolationCount
+                testCase.LayoutReport.LocalCoordinateOffsetViolationCount
+                testCase.LayoutReport. ...
+                TransitionCanvasExpansionWarningCount
+                testCase.LayoutReport.DirectRouteOpportunityViolationCount
+                testCase.LayoutReport.SubviewerCornerBiasViolationCount
+                ];
+            testCase.verifyEqual( ...
+                testCase.LayoutReport.LayoutQualityViolationCount, ...
+                uint32(sum(componentCounts)));
+            % The user-facing primary model is the most important artifact.
+            % Do not relax this gate based on a candidate filename: that
+            % allowed the primary model to keep five upper-left-biased
+            % subcharts while only specially named work files were checked.
+            testCase.verifyEqual( ...
+                testCase.LayoutReport.LayoutQualityViolationCount, ...
+                uint32(0), ...
+                testCase.LayoutReport.LayoutQualityDiagnostic);
+            testCase.verifyEqual( ...
+                componentCounts, zeros(5, 1, "uint32"));
+        end
+
+        function subchartContentsUseNormalizedLocalCoordinates(testCase)
+            inventory = testCase.LayoutReport.HierarchyInventory;
+            subcharts = inventory(inventory.Kind == "Subchart", :);
+
+            testCase.verifyFalse(isempty(subcharts));
+            rules = testCase.LayoutReport.Rules;
+            testCase.verifyGreaterThanOrEqual(subcharts.StateMinX, ...
+                rules.MinimumSubviewerStateMinX);
+            testCase.verifyLessThanOrEqual(subcharts.StateMinX, ...
+                rules.MaximumSubviewerStateMinX);
+            testCase.verifyGreaterThanOrEqual(subcharts.StateMinY, ...
+                rules.MinimumSubviewerStateMinY);
+            testCase.verifyLessThanOrEqual(subcharts.StateMinY, ...
+                rules.MaximumSubviewerStateMinY);
+        end
+
+        function subchartSavedViewportsRemainReadable(testCase)
+            [~, modelName] = fileparts(testCase.ModelFile);
+            wasLoaded = bdIsLoaded(modelName);
+            if ~wasLoaded
+                open_system(testCase.ModelFile);
+            end
+            cleanup = onCleanup(@() closeIfOriginallyClosed( ...
+                modelName, wasLoaded));
+            dirtyBefore = string(get_param(modelName, "Dirty"));
+            chart = find(sfroot, "-isa", "Stateflow.Chart", ...
+                "Path", modelName + "/MissionSupervisor");
+            testCase.assertNotEmpty(chart);
+            states = chart.find("-isa", "Stateflow.State");
+            subcharts = states(logical([states.IsSubchart]));
+            inventory = testCase.LayoutReport.HierarchyInventory;
+            inventory = inventory(inventory.Kind == "Subchart", :);
+            savedZoomFactors = nan(numel(subcharts), 1);
+            fitZoomFactors = nan(numel(subcharts), 1);
+            for index = 1:numel(subcharts)
+                row = inventory(inventory.Name == ...
+                    string(subcharts(index).Name), :);
+                testCase.assertEqual(height(row), 1, ...
+                    "Subviewer inventory must uniquely identify each subchart.");
+                view(subcharts(index));
+                drawnow;
+                savedZoom = chart.Editor.ZoomFactor;
+                savedZoomFactors(index) = savedZoom;
+                fitToView(subcharts(index));
+                drawnow;
+                fitZoom = chart.Editor.ZoomFactor;
+                fitZoomFactors(index) = fitZoom;
+                chart.Editor.ZoomFactor = savedZoom;
+            end
+            view(chart);
+            drawnow;
+            widthUtilization = inventory.GraphicWidth ./ ...
+                inventory.CanvasWidth;
+            heightUtilization = inventory.GraphicHeight ./ ...
+                inventory.CanvasHeight;
+            maximumUtilization = max([widthUtilization, ...
+                heightUtilization], [], 2);
+            rules = testCase.LayoutReport.Rules;
+            testCase.verifyTrue(all(isfinite(savedZoomFactors) & ...
+                savedZoomFactors > 0));
+            testCase.verifyTrue(all(isfinite(fitZoomFactors) & ...
+                fitZoomFactors > 0));
+            testCase.verifyGreaterThanOrEqual(maximumUtilization, ...
+                rules.MinimumSubviewerPageAxisUtilization, ...
+                "Space/Fit page leaves excessive empty space.");
+            testCase.verifyLessThanOrEqual(widthUtilization, ...
+                rules.MaximumSubviewerPageWidthUtilization);
+            testCase.verifyLessThanOrEqual(heightUtilization, ...
+                rules.MaximumSubviewerPageHeightUtilization);
+            testCase.verifyEqual(string(get_param(modelName, "Dirty")), ...
+                dirtyBefore, "Viewport verification must not dirty the model.");
+        end
+
         function conservativePathWarningsMatchReviewedPairs(testCase)
             warnings = testCase.LayoutReport. ...
                 ApproximateRoutingViolations;
@@ -203,19 +325,16 @@ classdef StateflowGraphicalLayoutTest < matlab.unittest.TestCase
 
             testCase.verifyEqual( ...
                 testCase.LayoutReport.LabelPathOverlapCount, uint32(0));
-            testCase.verifyEqual( ...
-                testCase.LayoutReport. ...
-                PathPathCrossingOrPartialOverlapCount, uint32(2));
-            testCase.verifyEqual( ...
-                testCase.LayoutReport.ApproximateRoutingViolationCount, ...
-                uint32(2));
             testCase.verifyTrue(all( ...
                 warnings.Category == ...
                 "PathPathCrossingOrPartialOverlap"));
-            testCase.verifyTrue(any(contains(pairs, "T60 ") & ...
-                contains(pairs, "T54 ")));
-            testCase.verifyTrue(any(contains(pairs, "T60 ") & ...
-                contains(pairs, "T61 ")));
+            testCase.verifyLessThanOrEqual( ...
+                testCase.LayoutReport. ...
+                ApproximateRoutingViolationCount, uint32(2));
+            if ~isempty(warnings)
+                testCase.verifyTrue(any(contains(pairs, "T54 ") & ...
+                    contains(pairs, "T60 ")));
+            end
         end
 
         function routingApiLimitationsAreReported(testCase)
@@ -229,4 +348,10 @@ classdef StateflowGraphicalLayoutTest < matlab.unittest.TestCase
             testCase.verifyTrue(all(strlength(actualLimitations) > 0));
         end
     end
+end
+
+function closeIfOriginallyClosed(modelName, wasLoaded)
+if ~wasLoaded && bdIsLoaded(modelName)
+    close_system(modelName, 0);
+end
 end

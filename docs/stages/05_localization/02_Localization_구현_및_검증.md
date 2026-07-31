@@ -37,7 +37,7 @@ src/+amr/+localization/systematicResample.m
 src/+amr/+localization/estimateParticlePose.m
 tests/unit/verify_odometry.m
 tests/unit/verify_localization.m
-models/prototypes/amr_localization_prototype.slx
+models/examples/amr_localization_prototype.slx
 ```
 
 ## 검증 시나리오

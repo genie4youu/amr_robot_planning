@@ -49,9 +49,15 @@ Stateflow 작업은 다음 다섯 단계가 모두 끝나야 완료로 본다.
 현재 Mission Supervisor 차트의 레이아웃 진입점은
 `scripts/layout_amr_mission_supervisor.m`이다. 이 스크립트처럼 다음 계약을 지킨다.
 
+승인된 v07 위치·배율 수치는 `amr.stateflow.graphicalLayoutProfile`에 한 번만 정의한다.
+레이아웃 스크립트, 검사기와 테스트는 이 프로필을 읽으며 새 차트나 새 Subchart도 별도 요청
+없이 같은 로컬 시작점, page 비율과 viewport 완료 조건을 적용한다.
+
 - 기본 실행에서 원본 모델 백업을 생성한다.
 - 그래픽 속성을 바꾸기 전에 논리 서명을 캡처한다.
-- 모든 State와 Transition에 대응하는 선언적 레이아웃 행을 둔다.
+- 차트부터 가장 깊은 Composite State/Subchart까지 모든 Subviewer를 자동 수집하고,
+  각 직접 자식 State와 Transition에 대응하는 레이아웃·라우팅 기록을 둔다. 특정 Region
+  이름이나 고정 좌표 표에 의존하지 않는다.
 - `ExecutionOrder`를 복원한 뒤 논리 서명을 다시 비교한다.
 - 모든 검증이 끝나기 전에는 변경 모델을 최종 결과로 보고하지 않는다.
 - `fitToView`는 저장과 검증 이후 마지막 화면 확인 단계에서만 호출한다.
@@ -60,7 +66,7 @@ Stateflow 작업은 다음 다섯 단계가 모두 끝나야 완료로 본다.
 
 ```matlab
 report = amr.stateflow.inspectGraphicalLayout( ...
-    "models/prototypes/amr_mission_supervisor.slx", ...
+    "models/mission_supervisor/amr_mission_supervisor.slx", ...
     "MissionSupervisor");
 assert(report.HardViolationCount == 0);
 
@@ -124,6 +130,9 @@ assert(all([results.Passed]));
 | 수직 | 110 px |
 
 이 값은 최소값이다. 상태 액션이나 전이 라벨이 길면 상태 또는 통로를 더 넓힌다.
+다만 하나의 명확한 순차 경로를 같은 행에 압축 배치하는 Subchart에서는 모든 State 높이와
+수직 중심을 통일하고, 전이가 수평 직선이며 라벨 여백이 확보된 경우 수평 간격 25–40 px를
+사용할 수 있다. 이 예외는 검사기와 결과 노트에 해당 행을 명시한 경우에만 적용한다.
 
 ### 4.2 NavigationRegion 권장 배치
 
@@ -167,6 +176,12 @@ NavFailed  ←────  Recovery  ←────  Replanning
   정리한 경우에는 원문과 정규화된 액션을 모두 비교하고, 별도 변경으로 기록한다.
 - 상태 액션이 지나치게 커도 레이아웃 작업 중에 함수 호출로 치환하지 않는다. 함수화는
   별도 리팩터링, 별도 검증 작업으로 수행한다.
+- State 폭은 이름·action의 추정 표시 폭과 기본 padding으로 정한다. 필요 폭의 3배를
+  넘거나 같은 행 전체 State 폭의 50%를 넘으면 과대 폭 경고로 처리한다.
+- Transition 포트를 수직으로 맞추기 위해 공통 오류 State를 정상 행 전체 폭으로 늘리지
+  않는다. State 크기는 라우팅 lane이 아니다.
+- 일반 Composite State는 제목 영역을 제외한 실제 내부 사용 영역에 자식 bounding box의
+  중심을 맞춘다. 부모만 확대하고 자식 좌표를 그대로 두지 않는다.
 
 상태를 배치한 뒤 모든 State의 `BadIntersection`이 `false`인지 확인한다.
 
@@ -257,6 +272,11 @@ detour ratio가 2.20을 넘지 않게 한다. 이 상한이 과도한 큰 원호
 아래 행에 넓게 배치하는 구성을 먼저 검토한다. 정상 흐름을 여러 행으로 접어 cancellation
 경로가 중간 정상 State를 가로지르게 만들지 않는다.
 
+공통 예외 State의 폭은 표시 문자열에 필요한 크기로 제한한다. 여러 Source의 아래쪽 포트와
+예외 State 위쪽 포트를 각각 좌우 순서대로 균등 분산하고, 직접선이 State를 관통하지 않으면
+endpoint 평균을 `MidPoint`로 사용하는 대각선 직선을 허용한다. 모든 선을 수직으로 만들기
+위해 예외 State를 확대하거나 같은 Destination 포트에 겹치지 않는다.
+
 모든 `MidPoint`는 관계없는 State를 피해야 한다. 모든 `LabelPosition`은 State, 다른 라벨과
 전이선이 없는 빈 공간에 직접 지정한다. Transition의 기본 `FontSize`는 9로 통일한다.
 
@@ -306,21 +326,40 @@ routing-only 작업의 허용 State `Position` 변경 건수는 **0건**이다.
 Stateflow의 서브차트는 각 `Subviewer`마다 독립적인 그래픽 좌표계를 사용한다. 따라서
 상위 차트 좌표와 서브차트 좌표를 한 좌표계처럼 계산하지 않는다.
 
-1. State와 Transition을 `Subviewer`별 scope로 묶는다.
-2. routing-only 작업에서는 각 scope의 현재 State 좌표와 표준 좌표 사이의 공통 평행이동
+1. 차트, 직접 자식 객체가 있는 Composite State와 모든 Subchart를 재귀적으로 수집하고
+   가장 깊은 scope부터 처리한다.
+2. State와 Transition을 `Subviewer`별 scope로 묶는다. 부모 차트에서 보이는 Subchart
+   State의 `Position`을 그 내부 편집 화면의 정렬 영역으로 사용하지 않는다.
+3. Subchart의 직접 자식 State bounding box는 로컬 `minX=80..120`, `minY=100..200`에
+   둔다. 일반 시작점은 `[100 120]`이며, 위쪽 복귀 lane의 저장 안정성을 위해 필요한
+   scope만 `y=200`까지 허용한다. 부모 Chart의 Subchart `Position`이나 현재 편집 카메라
+   `subviewS.pos`를 State 정렬 영역으로 사용하지 않는다.
+4. routing-only 작업에서는 각 scope의 현재 State 좌표와 표준 좌표 사이의 공통 평행이동
    offset을 계산하고, Transition의 `MidPoint`와 `LabelPosition`에만 같은 offset을 적용한다.
-3. 같은 scope 안의 State 크기가 표준과 다르거나 State별 offset이 서로 다르면 자동 변환을
+5. 같은 scope 안의 State 크기가 표준과 다르거나 State별 offset이 서로 다르면 자동 변환을
    중단한다.
-4. 배치 직후의 메모리 상태만 믿지 않고 모델을 저장한 뒤 닫고 다시 열어 State 위치,
+6. State 배치가 끝난 scope마다 즉시 Transition endpoint, midpoint와 label을 새로 계산한다.
+   전체 State를 먼저 이동한 뒤 모든 Transition을 한꺼번에 처리하지 않는다.
+7. 배치 직후의 메모리 상태만 믿지 않고 모델을 저장한 뒤 닫고 다시 열어 State 위치,
    Transition geometry, 논리 서명을 다시 비교한다.
-5. 저장 또는 재열기 검증이 실패하면 작업 전 백업본으로 복구한다.
-6. 모든 scope의 검증이 끝난 뒤 서브차트별로 `view`와 `fitToView`를 적용하고, 마지막에
+8. 저장 또는 재열기 검증이 실패하면 작업 전 백업본으로 복구한다.
+9. 모든 scope의 검증이 끝난 뒤 서브차트별로 `view`와 `fitToView`를 적용하고, 마지막에
    상위 Chart를 연다. 이 화면 작업으로 모델의 dirty 상태가 바뀌지 않아야 한다.
+10. 동일 후보에 레이아웃을 두 번 연속 실행해 두 번째 State `Position`, endpoint,
+    `MidPoint`, `LabelPosition` 변화가 허용 오차 내 0인지 확인한다.
 
 각 Subviewer에서 State bounding box가 전체 그래픽 bounding box에서 차지하는 면적 비율은
 최소 0.50이어야 한다. 그래픽 bounding box가 State envelope의 왼쪽·오른쪽·위·아래로
 확장되는 크기는 각 방향 최대 180 px로 제한한다. 이 검사는 `fitToView`와 별개이며 저장 후
 다시 읽은 실제 endpoint, midpoint와 label 좌표로 계산한다.
+Subchart의 `StateMinX/StateMinY`가 위 로컬 범위를 벗어나면 hard layout-quality 위반이다.
+`subviewS.pos`는 State 배치 영역이 아니라 Space/Fit이 맞추는 저장 페이지다. State와
+Transition 배치가 확정된 뒤 페이지는 전체 graphical bounding box를 기준으로 가로 활용률
+0.90, 세로 활용률 0.82, 방향별 최소 여백 60 px가 되도록 별도로 정규화한다. R2025b에서
+이 페이지 rectangle은 공개 API로 쓰기 불가능하므로, 모델을 닫은 상태에서 SLX Stateflow
+XML의 해당 Subchart `subviewS.pos`만 변경할 수 있다. 이때 후보 백업, SSID별 단일 매치,
+State/Transition/Junction 수, 전체 논리 서명과 전체 객체 geometry의 무변경을 저장·재열기로
+검증해야 한다. 다른 `subviewS` 값이나 논리 XML은 수정하지 않는다.
 
 ## 7. 폰트와 화면 표시
 
@@ -329,6 +368,22 @@ Stateflow의 서브차트는 각 `Subviewer`마다 독립적인 그래픽 좌표
 - 개별 객체의 글꼴도 같은 기준을 따르되, 텍스트를 맞추기 위해 축소하지 않는다.
 - 모든 객체 배치와 검증을 마친 뒤 차트를 열고 `fitToView`를 실행한다.
 - `fitToView`는 최종 화면 맞춤과 육안 검토에만 사용하며 객체 배치를 대신하지 않는다.
+- 저장된 pan/zoom만 크게 설정해 과대 페이지를 숨기지 않는다. 저장·닫기·재열기 후 실제
+  Space/Fit 동작과 같은 `view(subchart); fitToView(subchart)`를 다시 실행해 검사한다.
+- 먼저 `view(subchart)`로 내부 편집 화면을 활성화한 다음 같은 Subchart 객체에
+  `fitToView(subchart)`를 호출한다. 내부 자식 State 하나에 `fitToView`를 호출하면 그 State만
+  화면에 가득 차도록 과도하게 확대될 수 있다.
+- 저장된 Subchart 페이지가 콘텐츠보다 현저히 크면 ZoomFactor를 추가 확대하지 말고 먼저
+  페이지 rectangle을 graphical bounding box에 맞게 정상화한다. 화면 맞춤 후 임의의 추가
+  확대 없이도 읽기 좋아야 한다.
+- 추가 확대 후 어느 한 화면 축의 콘텐츠 점유율은 최소 0.70이어야 하고, 가로 0.93 또는
+  세로 0.78을 넘겨 잘려서는 안 된다. 확대율을 저장하고 모델을 닫았다가 다시 열어 각
+  Subchart의 `ZoomFactor`가 유지되는지 검사한다.
+- 절대 표시 픽셀은 Stateflow 창 크기와 도킹 상태에 따라 달라지므로 hard 기준으로 쓰지
+  않는다. 저장·재열기와 실제 Space/Fit 후 `max(graphicWidth/pageWidth,
+  graphicHeight/pageHeight)`가 0.70 이상이어야 한다. 가로 활용률은 0.93, 세로 활용률은
+  0.82를 넘지 않아야 하며 그래픽이 페이지 밖으로 나가면 안 된다. 이 검사는 후보 파일명뿐
+  아니라 사용자가 실제로 여는 정식 모델에도 항상 적용한다.
 - `sfprint(..., wholeChart=true)`는 서브차트 객체 경계보다 큰 편집 작업면을 포함할 수 있다.
   이 PNG의 빈 배경만으로 child State 쏠림을 판정하지 않고, 저장 후 좌표 기반 canvas 지표와
   실제 편집기 `fitToView` 화면을 함께 검토한다.
@@ -388,6 +443,13 @@ Stateflow의 서브차트는 각 `Subviewer`마다 독립적인 그래픽 좌표
 - 의미 보존 검증 없이 추가하거나 삭제한 Junction 0건
 - State 경계 밖으로 잘리는 이름 또는 액션 0건
 - 기본 전이가 불필요하게 긴 경우 0건
+
+공통 검사기는 모든 발견된 Subviewer에 대해 직접 자식 State/Transition/Junction 수,
+State·전체 그래픽 bounding box, 로컬 offset, 중심 차이, 방향별 canvas 확장,
+route length ratio와 maximum route deviation을 `HierarchyInventory`에 기록한다. 또한
+과대 State, Subchart canvas 중심 오차 10% 초과, State envelope보다 한 방향으로 100 px 이상
+확장된 Transition canvas, 다른 State와 sibling path를 모두 피하는 직선 기회,
+State/graphics 중심 차이 20% 초과를 layout-quality 항목으로 검사한다.
 
 공통 검사기는 sibling State 겹침, `BadIntersection`, NavigationRegion의 정상·예외 행 순서,
 수평 80 px·수직 110 px 간격, State/Transition의 10/9 글꼴, Transition 라벨과 State 또는

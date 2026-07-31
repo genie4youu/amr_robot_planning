@@ -4,7 +4,7 @@ function summary = run_integrated_environment_matrix()
 scriptDirectory = fileparts(mfilename("fullpath"));
 projectRoot = fileparts(scriptDirectory);
 addpath(scriptDirectory, fullfile(projectRoot, "src"));
-modelPath = fullfile(projectRoot, "models", "system", ...
+modelPath = fullfile(projectRoot, "models", "integrated_system", ...
     "amr_integrated_delivery_system.slx");
 modelName = "amr_integrated_delivery_system";
 load_system(modelPath);

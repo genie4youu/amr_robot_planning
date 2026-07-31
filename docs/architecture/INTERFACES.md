@@ -7,7 +7,7 @@ typed bus와 enum으로 점진적으로 치환하기 위한 목표 계약이다.
 
 ## v1 구현 경계
 
-`models/prototypes/amr_mission_supervisor.slx`는 Plant와 Supervisor 책임을 먼저
+`models/mission_supervisor/amr_mission_supervisor.slx`는 Plant와 Supervisor 책임을 먼저
 분리해 검증하기 위해 26개 scalar 입력을 adapter 경계로 사용한다.
 
 | 입력 묶음 | v1 신호 |

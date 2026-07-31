@@ -1,7 +1,11 @@
-function verification = run_supervisor_verification()
+function verification = run_supervisor_verification(options)
 %RUN_SUPERVISOR_VERIFICATION Run the repeatable verification workflow.
 %   This runner uses matlab.unittest and scripted-plant simulations because
 %   Simulink Test is not installed in the project environment.
+
+arguments
+    options.ModelPath (1,1) string = ""
+end
 
 scriptFolder = fileparts(mfilename("fullpath"));
 projectRoot = fileparts(scriptFolder);
@@ -9,6 +13,18 @@ addpath( ...
     fullfile(projectRoot, "src"), ...
     fullfile(projectRoot, "scripts"), ...
     fullfile(projectRoot, "tests", "unit"));
+
+if strlength(options.ModelPath) == 0
+    supervisorModelPath = fullfile(projectRoot, "models", ...
+        "mission_supervisor", "amr_mission_supervisor.slx");
+elseif java.io.File(char(options.ModelPath)).isAbsolute()
+    supervisorModelPath = options.ModelPath;
+else
+    supervisorModelPath = fullfile(projectRoot, options.ModelPath);
+end
+assert(isfile(supervisorModelPath), ...
+    "AMR:Supervision:ModelNotFound", ...
+    "Supervisor model was not found: %s", supervisorModelPath);
 
 verify_supervisor_requirements();
 
@@ -22,14 +38,16 @@ assert(all([interfaceResults.Passed]), ...
 
 layoutTestFile = fullfile( ...
     projectRoot, "tests", "unit", "StateflowGraphicalLayoutTest.m");
+previousLayoutModel = getenv("AMR_SUPERVISOR_LAYOUT_MODEL");
+layoutModelCleanup = onCleanup(@() setenv( ...
+    "AMR_SUPERVISOR_LAYOUT_MODEL", previousLayoutModel));
+setenv("AMR_SUPERVISOR_LAYOUT_MODEL", supervisorModelPath);
 layoutResults = runtests(layoutTestFile);
 assert(all([layoutResults.Passed]), ...
     "AMR:Supervision:GraphicalLayoutTestsFailed", ...
     "%d of %d Stateflow graphical layout tests failed.", ...
     nnz(~[layoutResults.Passed]), numel(layoutResults));
 
-supervisorModelPath = fullfile(projectRoot, "models", "prototypes", ...
-    "amr_mission_supervisor.slx");
 scenarioSummary = run_amr_mission_supervisor_scenarios( ...
     ModelPath=supervisorModelPath);
 assert(all(scenarioSummary.Passed), ...

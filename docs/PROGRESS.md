@@ -37,7 +37,7 @@
 
 ## 통합 모델 결과
 
-- 모델: `models/system/amr_integrated_delivery_system.slx`
+- 모델: `models/integrated_system/amr_integrated_delivery_system.slx`
 - 실제 Scenario Plant 신호를 Industrial Supervisor 20개 입력으로 변환
 - 장애물: Navigation `[0 1 2 3 2 0]`, Safety `[0 1 2 0]`
 - 배터리: Energy `[0 1 2 3 0]`
@@ -97,8 +97,8 @@ industrialSummary = run_industrial_supervisor_scenarios();
 통합 Plant/Supervisor의 12개 조합 검증은 다음 명령으로 실행한다.
 
 ```matlab
-load_system('models/system/amr_integrated_delivery_system.slx')
-open_system('models/system/amr_integrated_delivery_system.slx')
+load_system('models/integrated_system/amr_integrated_delivery_system.slx')
+open_system('models/integrated_system/amr_integrated_delivery_system.slx')
 integratedEnvironmentSummary = run_integrated_environment_matrix();
 ```
 

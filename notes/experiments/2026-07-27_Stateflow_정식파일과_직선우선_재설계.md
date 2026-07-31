@@ -11,12 +11,12 @@
 
 현재 정식 Mission Supervisor는 다음 한 파일이다.
 
-- `models/prototypes/amr_mission_supervisor.slx`
+- `models/mission_supervisor/amr_mission_supervisor.slx`
 
-교체된 모델은 삭제하지 않고 `models/history/`로 이동했다.
+교체된 모델은 삭제하지 않고 `models/mission_supervisor/versions/`로 이동했다.
 
-- `amr_mission_supervisor_logic_baseline_2026-07-24.slx`: 그래픽 작업 전 논리 기준선
-- `amr_mission_supervisor_curved_layout_2026-07-27.slx`: 과도한 곡선과 child 쏠림이 남았던 비교본
+- `amr_mission_supervisor_logic_baseline_2026_07_24.slx`: 그래픽 작업 전 논리 기준선
+- `amr_mission_supervisor_curved_layout_2026_07_27.slx`: 과도한 곡선과 child 쏠림이 남았던 비교본
 
 활성 모델은 버전 없는 정식 이름을 사용하고, 이전본에만 날짜와 역할을 붙이는 규칙으로
 통일했다.

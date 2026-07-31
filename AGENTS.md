@@ -19,7 +19,7 @@ MATLAB, Simulink, Stateflow만으로 실내 배송 AMR의 핵심 알고리즘과
 - 학습 문서 길잡이: `docs/README.md`
 - 학습 순서: `docs/THEORY_INDEX.md`
 - 실행 안내: `docs/GETTING_STARTED.md`
-- 대표 통합 모델: `models/system/amr_integrated_delivery_system.slx`
+- 대표 통합 모델: `models/integrated_system/amr_integrated_delivery_system.slx`
 - 전체 단위검사: `scripts/run_unit_verification.m`
 
 ## 작업 규칙
@@ -60,6 +60,19 @@ MATLAB, Simulink, Stateflow만으로 실내 배송 AMR의 핵심 알고리즘과
 ## Stateflow 그래픽 필수 규칙
 
 모든 Stateflow 생성·수정 작업은 `docs/STATEFLOW_GRAPHICAL_STANDARD.md`를 따른다.
+
+현재 승인된 v07 위치·배율은 `amr.stateflow.graphicalLayoutProfile`에 고정되어 있다. 이후
+Mission Supervisor에 새 State/Subchart를 추가하거나 새 Stateflow 차트를 만들 때도 이름과
+무관하게 같은 프로필을 기본값으로 적용한다.
+
+- Subchart 직접 자식의 로컬 시작점은 기본 `[100 120]`, 상단 복귀 lane이 있으면
+  `[100 200]`이고 허용 범위는 `minX=80..120`, `minY=100..200`이다.
+- 부모 차트의 Subchart State `Position`과 `subviewS.pos`를 내부 State 정렬 영역으로 쓰지
+  않는다.
+- 배치 후 페이지 최소 여백 60 px, 목표 활용률 `[0.90 0.82]`, 실제 화면 최대 축 활용률
+  0.70 이상, 가로 0.93 이하, 세로 0.82 이하를 검사한다.
+- 저장된 확대율만으로 문제를 숨기지 않고, 저장·닫기·재열기 후 모든 Subchart에서
+  `view`/`fitToView`, page rectangle, viewport 지속성과 논리·geometry 보존을 검증한다.
 
 - 논리 생성과 그래픽 레이아웃을 별도 단계로 수행하고, 기존 모델은 레이아웃 작업 전에
   `work/backups/`에 백업한다.

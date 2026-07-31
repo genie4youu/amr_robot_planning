@@ -2,7 +2,7 @@ function modelPath = build_amr_industrial_supervisor()
 %BUILD_AMR_INDUSTRIAL_SUPERVISOR Create a hierarchical parallel supervisor.
 
 projectRoot = fileparts(fileparts(mfilename("fullpath")));
-modelDirectory = fullfile(projectRoot, "models", "system");
+modelDirectory = fullfile(projectRoot, "models", "examples");
 modelName = "amr_industrial_supervisor";
 modelPath = fullfile(modelDirectory, modelName + ".slx");
 if isfile(modelPath)

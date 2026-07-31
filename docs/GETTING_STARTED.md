@@ -19,8 +19,11 @@ project = openProject("AMRRobotPlanning.prj");
 - `scripts`
 - `src`
 - `tests/unit`
-- `models/prototypes`
-- `models/system`
+- `models/mission_supervisor`
+- `models/mission_supervisor/versions`
+- `models/mission_supervisor/comparison`
+- `models/integrated_system`
+- `models/examples`
 
 캐시와 코드 생성물은 프로젝트의 `work/`에 저장됩니다. 임시로 MATLAB Project를 사용하지 않을 때만
 `setup_amr_project`를 실행하십시오.
@@ -87,29 +90,29 @@ integratedSummary = run_integrated_delivery_scenarios();
 최신 Mission Supervisor와 정리된 Stateflow 그래픽:
 
 ```matlab
-load_system("models/prototypes/amr_mission_supervisor.slx");
-open_system("models/prototypes/amr_mission_supervisor.slx");
+load_system("models/mission_supervisor/amr_mission_supervisor.slx");
+open_system("models/mission_supervisor/amr_mission_supervisor.slx");
 ```
 
 Scenario Plant와 복구 Stateflow:
 
 ```matlab
-load_system("models/prototypes/amr_scenario_supervisor.slx");
-open_system("models/prototypes/amr_scenario_supervisor.slx");
+load_system("models/examples/amr_scenario_supervisor.slx");
+open_system("models/examples/amr_scenario_supervisor.slx");
 ```
 
 계층·병렬 Industrial Supervisor:
 
 ```matlab
-load_system("models/system/amr_industrial_supervisor.slx");
-open_system("models/system/amr_industrial_supervisor.slx");
+load_system("models/examples/amr_industrial_supervisor.slx");
+open_system("models/examples/amr_industrial_supervisor.slx");
 ```
 
 Plant와 Industrial Supervisor 통합 모델:
 
 ```matlab
-load_system("models/system/amr_integrated_delivery_system.slx");
-open_system("models/system/amr_integrated_delivery_system.slx");
+load_system("models/integrated_system/amr_integrated_delivery_system.slx");
+open_system("models/integrated_system/amr_integrated_delivery_system.slx");
 ```
 
 ## 6. 결과 파일

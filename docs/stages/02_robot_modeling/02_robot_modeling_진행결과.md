@@ -21,7 +21,7 @@
 - `amr.modeling.differentialDriveForward`
 - `amr.modeling.differentialDriveInverse`
 - `amr.modeling.integrateDifferentialDrive`
-- `models/prototypes/amr_milestone01.slx/DifferentialDrivePlant`
+- `models/examples/amr_milestone01.slx/DifferentialDrivePlant`
 
 ## 직진·회전·원운동 결과
 

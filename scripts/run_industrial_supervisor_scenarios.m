@@ -3,7 +3,7 @@ function summary = run_industrial_supervisor_scenarios()
 
 scriptDirectory = fileparts(mfilename("fullpath"));
 projectDirectory = fileparts(scriptDirectory);
-modelFile = fullfile(projectDirectory, "models", "system", ...
+modelFile = fullfile(projectDirectory, "models", "examples", ...
     "amr_industrial_supervisor.slx");
 resultDirectory = fullfile(projectDirectory, "results");
 modelName = "amr_industrial_supervisor";
